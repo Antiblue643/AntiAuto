@@ -1,6 +1,12 @@
 # Welcome to The AntiAuto!
 
-The AntiAuto is a Fantasy computer. I made this with Python and Pygame. In the universe for my Snapverse games, The AntiAuto is a desktop computer, and a successor to the Vectormaster.
+The AntiAuto is a Fantasy computer. I made this with Python and Pygame. In the universe for my Snapverse 
+games, The AntiAuto is a desktop computer, and a successor to the Vectormaster.
+
+The disk has 2 folders: demos/ and experimental/
+
+Demos are like the VectorMaster, simple, mostly-working demos.
+The experimental folder however, is code I use for testing or messing around. That means it may include code that might work, might not work, or outright crash the emulator.
 
 ## Features
 
