@@ -7,6 +7,7 @@ gravity = 0.25
 ground_y = 184  # y position for the "ground"
 BALL_RADIUS = 4
 BALL_DIAM = 8
+BALL_CHAR = 219
 
 class Ball:
     def __init__(self):
@@ -19,7 +20,7 @@ class Ball:
         self.color = random.randint(16, 23) #lighter colors for more visibility
         self.bouncing = True
         self.age = 0  # seconds
-        self.character = 219
+        self.character = BALL_CHAR
         self.lifetime = random.randint(10, 15)
 
     def update(self, dt):
@@ -84,6 +85,7 @@ def main():
     running = True
     balls = [Ball()]
     last_time = time.time()
+    global BALL_CHAR
     while running:
         now = time.time()
         dt = now - last_time
@@ -121,5 +123,13 @@ def main():
                 if key_RETURN:
                     for i in range(16):
                         balls.append(Ball())
+                if key_UP:
+                    BALL_CHAR -= 1
+                    for b in balls:
+                        b.character = BALL_CHAR
+                if key_DOWN:
+                    BALL_CHAR += 1
+                    for b in balls:
+                        b.character = BALL_CHAR
 
 main()

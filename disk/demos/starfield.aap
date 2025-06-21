@@ -10,7 +10,7 @@ def init_stars(num, maxZ):
         x = random.randint(-128, 128)
         y = random.randint(-96, 96)
         z = random.randint(1, maxZ)
-        c = random.randint(1, 23) #color
+        c = random.randint(16, 23) #color
         stars.append([x, y, z, x, y, c])
     return stars
 
