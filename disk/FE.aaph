@@ -1,0 +1,129 @@
+#File explorer
+#Essential system file.
+
+import essentials
+import os
+import floppy
+import audio
+
+bkg = 9
+
+def get_programs():
+    items = []
+    
+    def scan_directory(current_path=""):
+        dir_items = []
+        full_path = "disk/" + current_path
+        
+        # Get all directories first
+        for item in os.listdir(full_path):
+            item_path = full_path + "/" + item
+            relative_path = current_path + "/" + item if current_path else item
+            
+            if os.path.isdir(item_path):
+                subitems = scan_directory(relative_path)
+                if subitems:
+                    dir_items.append(["dir", item, relative_path, subitems])
+        
+        # Then get all .aap files
+        for item in os.listdir(full_path):
+            item_path = full_path + "/" + item
+            relative_path = current_path + "/" + item if current_path else item
+            
+            if os.path.isfile(item_path) and item.endswith(".aap"):
+                dir_items.append(["file", item, relative_path, None])
+        
+        return sorted(dir_items)
+    
+    return scan_directory()
+
+def draw_list(items, selected, path=""):
+    screen.clear(bkg)
+    screen.draw_string(40, 8, "The Antiauto", bkg, 23)
+    
+    if path:
+        screen.draw_string(0, 24, "/" + path, bkg, 23)
+    else:
+        screen.draw_string(0, 24, "Select a program:", bkg, 23)
+    
+    y = 40
+    for i in range(len(items)):
+        cursor = ">" if i == selected else " "
+        prefix = "[+] " if items[i][0] == "dir" else "    "
+        screen.draw_string(0, y, cursor + prefix + items[i][1], bkg, 23)
+        y = y + 12
+    
+    if path:
+        screen.draw_string(0, 180, "U/D: Sel, Ent: Opn, Esc: Back", bkg, 23)
+    else:
+        screen.draw_string(0, 180, "U/D: Sel, Ent: Opn, Esc: shdn", bkg, 23)
+    screen.update()
+
+# Main program
+programs = get_programs()
+if not programs:
+    screen.draw_string(0, 8, "No .aap programs found in disk/", bkg, 23)
+    screen.update()
+    stop()
+
+nav_stack = [[programs, 0]]
+running = True
+
+while running:
+    current = nav_stack[-1]
+    items = current[0]
+    selected = current[1]
+    
+    # Calculate current path
+    path = ""
+    for i in range(len(nav_stack) - 1):
+        name = nav_stack[i][0][nav_stack[i][1]][1]
+        path = path + "/" + name if path else name
+    
+    draw_list(items, selected, path)
+    
+    for get_events:
+        if quit_event:
+            stop()
+        
+        if resize_event:
+            screen.handle_resize(event)
+        
+        if key_down_event:
+            if key_ESCAPE:
+                if len(nav_stack) > 1:
+                    nav_stack.pop()
+                    beep("D#4", 0.05)
+                else:
+                    screen.clear(bkg)
+                    screen.update()
+                    running = False
+                    raise SystemExit
+            
+            if key_UP:
+                nav_stack[-1][1] = (selected - 1) % len(items)
+                beep("C5", 0.05)
+            
+            if key_DOWN:
+                nav_stack[-1][1] = (selected + 1) % len(items)
+                beep("A4", 0.05)
+            if key_RETURN:
+                item = items[selected]
+                if item[0] == "dir":
+                    nav_stack.append([item[3], 0])
+                    beep("E5", 0.05)
+                else:
+                    beep("A5", 0.05)
+                    screen.clear(bkg)
+                    running = False
+                    try:
+                        parser.parse_keys(item[2])
+                        parser.run()
+                    except:
+                        pass
+                    parser.reset()
+                    running = True
+                    nav_stack = [[programs, 0]]
+
+stop()
+

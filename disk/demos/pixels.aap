@@ -1,0 +1,28 @@
+#AntiAuto programs use a Python-like language
+
+#Although it is most definitely not compatible with the Vectormaster syntax, some functions can be swapped for their Antiauto equivalents.
+
+#it uses most of the same syntax as Python, but it uses the Antiauto's custom functions instead of Python's.
+
+import essentials #neccessary unless you want to add modules manually for some reason.
+import random #Other modules are optional.
+
+screen.clear(0) #clear screen with color 0 (black)
+screen.type(0, 0, "Pixels Demo!", 0, 7) #draws a string (background color 0, foreground color 7) at the top of the screen. You can also use screen.draw_string() instead.
+
+
+def main(): #Main function.
+    running = True #needed
+    while running: #needed
+        screen.draw_pixel(random.randint(0, 256), random.randint(8, 192), 23) #draws a pixel (color 23) at a random position.
+        screen.update() #updates the screen.
+        for get_events: #the following code is needed for the program to work.
+            if quit_event: #if the user quits the program.
+                running = False #stops the program.
+            elif resize_event: #if the user resizes the window.
+                screen.handle_resize(event) #resizes the screen to the new size.
+            elif key_down_event: #checks for key presses.
+                if special_key: #if the user presses the special key.
+                    running = False #stops the program.
+
+main() #runs the program.

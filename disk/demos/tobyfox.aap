@@ -1,0 +1,301 @@
+#undertale/deltarune type fight
+
+import essentials
+import time
+import random
+import pygame as pg
+
+def player(x, y, visible, state=0):
+    normal = [
+        0, 1, 0, 0, 1, 0,
+        1, 1, 1, 1, 1, 1,
+        1, 1, 1, 1, 1, 1,
+        1, 1, 1, 1, 1, 1,
+        0, 1, 1, 1, 1, 0,
+        0, 0, 1, 1, 0, 0,
+    ]
+    broken = [
+        0, 1, 0, 0, 1, 0,
+        1, 1, 1, 0, 1, 1,
+        1, 1, 0, 1, 1, 1,
+        1, 1, 1, 0, 1, 1,
+        0, 1, 0, 0, 1, 0,
+        0, 0, 0, 1, 0, 0,
+    ]
+    for i in range(6):
+        for j in range(6):
+            if state == 0:
+                if normal[i * 6 + j] == 1:
+                    if visible:
+                        screen.draw_pixel(x + j, y + i, 11)
+            elif state == 1:
+                if broken[i * 6 + j] == 1:
+                    if visible:
+                        screen.draw_pixel(x + j, y + i, 11)
+
+def heartParticle(x, y, dx, dy):
+    sprite = [
+        0, 1, 0, 0,
+        1, 1, 1, 0,
+        1, 1, 1, 1,
+        0, 1, 1, 1
+    ]
+    for i in range(4):
+        for j in range(4):
+            if sprite[i * 4 + j] == 1:
+                screen.draw_pixel(int(x) + j, int(y) + i, 11)
+
+def create_death_particles(x, y, power):
+    # Create 8 particles with different initial velocities
+    particles = []
+    velocities = [
+        (-3 * power, -4 * power), (-1 * power, -4 * power), (1 * power, -4 * power), (3 * power, -4 * power),  # Upper particles with more upward velocity
+        (-3 * power, -2 * power), (-1 * power, -2 * power), (1 * power, -2 * power), (3 * power, -2 * power)   # Lower particles
+    ]
+    for dx, dy in velocities:
+        particles.append({"x": x, "y": y, "dx": dx, "dy": dy})
+    return particles
+
+def update_particles(particles):
+    gravity = 0.05
+    for particle in particles:
+        # Update velocity with gravity
+        particle["dy"] += gravity
+        # Update position
+        particle["x"] += particle["dx"]
+        particle["y"] += particle["dy"]
+        # Draw the particle
+        heartParticle(particle["x"], particle["y"], 0, 0)
+    # Remove particles that fall off screen
+    return [p for p in particles if p["y"] < 192]
+
+def box():    
+    width = 64
+    height = 64
+    x_offset = (256 - width) // 2
+    y_offset = (192 - height) // 2
+    
+    # Draw box using absolute coordinates
+    screen.draw_line(x_offset, y_offset, x_offset + width, y_offset, 23)  # Top
+    screen.draw_line(x_offset, y_offset, x_offset, y_offset + height, 23)  # Left
+    screen.draw_line(x_offset, y_offset + height, x_offset + width, y_offset + height, 23)  # Bottom
+    screen.draw_line(x_offset + width, y_offset, x_offset + width, y_offset + height, 23)  # Right
+
+def stats(lvl, hp):
+    string = "Antiblue  lV " + str(lvl) + "  HP " + str(hp) + "/20"
+    screen.draw_string(128 - len(string) * 4, 132, string, 0, 23)
+
+
+def spawn_bullet():
+    # Get box boundaries
+    width = 64
+    height = 64
+    box_left = (256 - width) // 2
+    box_right = box_left + width
+    box_top = (192 - height) // 2
+    box_bottom = box_top + height
+    
+    direction = random.randint(0, 3)
+    # 5% chance for a healing bullet
+    is_healing = random.random() < 0.05
+    
+    if direction == 0:  # From left
+        return [box_left, random.randint(box_top, box_bottom), 1, 0, is_healing]
+    elif direction == 1:  # From right
+        return [box_right, random.randint(box_top, box_bottom), -1, 0, is_healing]
+    elif direction == 2:  # From top
+        return [random.randint(box_left, box_right), box_top, 0, 1, is_healing]
+    else:  # From bottom
+        return [random.randint(box_left, box_right), box_bottom, 0, -1, is_healing]
+
+def update_bullets(bullets):
+    bullet_speed = 1
+    # Get box boundaries
+    width = 64
+    height = 64
+    box_left = (256 - width) // 2
+    box_right = box_left + width
+    box_top = (192 - height) // 2
+    box_bottom = box_top + height
+    
+    # Move existing bullets
+    for bullet in bullets[:]:  # Create a copy of the list to iterate over
+        bullet[0] += bullet[2] * bullet_speed  # Update x position
+        bullet[1] += bullet[3] * bullet_speed  # Update y position
+        
+        # Remove bullets that leave the box
+        if (bullet[0] < box_left or bullet[0] > box_right or 
+            bullet[1] < box_top or bullet[1] > box_bottom):
+            bullets.remove(bullet)
+
+def draw_bullets(bullets):
+    sprite = [
+        0, 1, 1, 0,
+        1, 1, 1, 1,
+        0, 1, 1, 0
+    ]
+    for bullet in bullets:
+        color = 17 if bullet[4] else 23  # Green if healing, white if damaging
+        #4 columns, 3 rows
+        for x in range(4):
+            for y in range(3):
+                if sprite[x + y * 4] == 1:
+                    screen.draw_pixel(bullet[0] + x, bullet[1] + y, color)
+
+def check_collision(player_x, player_y, bullets):
+    for bullet in bullets[:]:  # Create a copy to safely modify during iteration
+        # Check if bullet is within 6 units of player (adjusted hitbox size)
+        if (abs(bullet[0] - player_x) < 6 and 
+            abs(bullet[1] - player_y) < 6):
+            bullets.remove(bullet)  # Remove the bullet upon collision
+            return (True, bullet[4])  # Return both collision and whether it's healing
+    return (False, False)
+
+def main():
+    running = True
+    # Start player in center of screen
+    player_x = 256 // 2
+    player_y = 192 // 2
+    bullets = []
+    hp = 20
+    lvl = 1
+    spawn_timer = 0
+    spawn_interval = 30
+    
+    # Death sequence states
+    ALIVE = 0
+    BREAKING = 1
+    PARTICLES = 2
+    GAME_OVER = 3
+    death_state = ALIVE
+    death_timer = 0
+    particles = []
+    
+    # Game over menu
+    menu_selection = 0  # 0 for Continue, 1 for Give Up
+    menu_y_positions = [96, 112]  # Y positions for Continue and Give Up options
+    
+    while running:
+        # Clear screen at start of frame
+        screen.clear()
+        
+        for get_events:
+            if quit_event:
+                running = False
+            if resize_event:
+                screen.handle_resize(event)
+            if key_down_event:
+                if special_key:
+                    running = False
+                # Handle menu selection in game over state
+                elif death_state == GAME_OVER:
+                    if key_UP or key_DOWN:
+                        menu_selection = 1 - menu_selection  # Toggle between 0 and 1
+                    elif key_z:  # Confirm selection
+                        if menu_selection == 0:  # Continue
+                            # Reset game state
+                            player_x = 256 // 2
+                            player_y = 192 // 2
+                            bullets = []
+                            hp = 20
+                            spawn_timer = 0
+                            death_state = ALIVE
+                        else:  # Give Up
+                            running = False
+
+        # Only process movement and game logic if alive
+        if death_state == ALIVE:
+            # Get the current state of all keys
+            keys = pg.key.get_pressed()
+            
+            # Handle movement based on held keys
+            player_speed = 1 if keys[pg.K_x] else 2
+            
+            # Handle movement
+            if keys[pg.K_UP]:
+                player_y -= player_speed
+            if keys[pg.K_DOWN]:
+                player_y += player_speed
+            if keys[pg.K_LEFT]:
+                player_x -= player_speed
+            if keys[pg.K_RIGHT]:
+                player_x += player_speed
+
+            # Spawn new bullets
+            spawn_timer += 1
+            if spawn_timer >= spawn_interval:
+                bullets.append(spawn_bullet())
+                spawn_timer = 0
+            
+            # Update bullet positions
+            update_bullets(bullets)
+            
+            # Check for collisions
+            collision, is_healing = check_collision(player_x, player_y, bullets)
+            if collision:
+                if is_healing:
+                    hp = min(20, hp + 5)
+                else:
+                    hp -= random.randint(3, 5)
+
+            # Check for death
+            if hp <= 0:
+                death_state = BREAKING
+                death_timer = 60  # Wait 1 second before next phase
+                hp = 0
+
+            # Constrain player position to the box
+            box_left = (256 - 64) // 2
+            box_right = box_left + 64
+            box_top = (192 - 64) // 2
+            box_bottom = box_top + 64
+            
+            player_x = max(box_left + 6, min(box_right - 6, player_x))
+            player_y = max(box_top + 6, min(box_bottom - 6, player_y))
+
+            # Draw game state
+            stats(lvl, hp)
+            box()
+            draw_bullets(bullets)
+            player(player_x - 3, player_y - 3, True, 0)
+
+        # Death sequence
+        elif death_state == BREAKING:
+            stats(lvl, hp)
+            player(player_x - 3, player_y - 3, True, 1)  # Draw broken sprite
+            death_timer -= 1
+            if death_timer <= 0:
+                death_state = PARTICLES
+                particles = create_death_particles(player_x, player_y, 0.5)
+                death_timer = 120  # Wait 2 seconds before game over
+
+        elif death_state == PARTICLES:
+            # Draw and update particles
+            particles = update_particles(particles)
+            death_timer -= 1
+            if death_timer <= 0 or not particles:  # End early if all particles are gone
+                death_state = GAME_OVER
+
+        elif death_state == GAME_OVER:
+            # Draw game over screen
+            game_over_text = "GAME OVER"
+            screen.draw_string(128 - len(game_over_text) * 4, 64, game_over_text, 0, 23)
+            
+            # Draw menu options
+            continue_text = "Continue"
+            give_up_text = "Give Up"
+            screen.draw_string(128 - len(continue_text) * 4, menu_y_positions[0], continue_text, 0, 23)
+            screen.draw_string(128 - len(give_up_text) * 4, menu_y_positions[1], give_up_text, 0, 23)
+            
+            # Draw heart cursor
+            cursor_x = 128 - len(continue_text) * 4 - 16  # Position cursor to the left of text
+            cursor_y = menu_y_positions[menu_selection]
+            player(cursor_x, cursor_y, True, 0)  # Use normal heart sprite as cursor
+        
+        # Update screen at end of frame
+        screen.update()
+        
+        # Add a small delay to control game speed
+        time.sleep(0.016)  # Approximately 60 FPS
+
+main()

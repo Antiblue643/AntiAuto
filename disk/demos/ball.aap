@@ -1,0 +1,125 @@
+import essentials
+import random
+import math
+import time
+
+gravity = 0.25
+ground_y = 184  # y position for the "ground"
+BALL_RADIUS = 4
+BALL_DIAM = 8
+
+class Ball:
+    def __init__(self):
+        self.x = random.randint(32, 224)
+        self.y = 40
+        angle = random.uniform(math.pi / 4, 3 * math.pi / 4)
+        speed = random.uniform(4, 7)
+        self.vx = speed * math.cos(angle)
+        self.vy = -abs(speed * math.sin(angle))
+        self.color = random.randint(16, 23) #lighter colors for more visibility
+        self.bouncing = True
+        self.age = 0  # seconds
+        self.character = 219
+        self.lifetime = random.randint(10, 15)
+
+    def update(self, dt):
+        if not self.bouncing:
+            self.age += dt
+            return
+        self.x += self.vx
+        self.y += self.vy
+        self.vy += gravity
+
+        # Bounce off walls
+        if self.x < 0:
+            self.x = 0
+            self.vx = -self.vx * 0.8
+            audio.beep(random.randint(80, 110), 0.05)
+        if self.x > 248:
+            self.x = 248
+            self.vx = -self.vx * 0.8
+            audio.beep(random.randint(80, 110), 0.05)
+
+        # Bounce off ground
+        if self.y >= ground_y:
+            self.y = ground_y
+            self.vy = -self.vy * 0.5
+            audio.beep(random.randint(80, 110), 0.05)
+            if abs(self.vy) < 1:
+                self.vy = 0
+                self.bouncing = False
+        self.age += dt
+
+def handle_collisions(balls):
+    for i in range(len(balls)):
+        for j in range(i + 1, len(balls)):
+            a = balls[i]
+            b = balls[j]
+            dx = a.x - b.x
+            dy = a.y - b.y
+            dist = math.hypot(dx, dy)
+            if dist < BALL_DIAM:
+                # Simple elastic collision: swap velocities along the collision axis
+                nx, ny = dx / (dist + 1e-6), dy / (dist + 1e-6)
+                va = a.vx * nx + a.vy * ny
+                vb = b.vx * nx + b.vy * ny
+                a.vx += (vb - va) * nx
+                a.vy += (vb - va) * ny
+                b.vx += (va - vb) * nx
+                b.vy += (va - vb) * ny
+                # Separate balls so they don't stick
+                overlap = BALL_DIAM - dist
+                a.x += nx * (overlap / 2)
+                a.y += ny * (overlap / 2)
+                b.x -= nx * (overlap / 2)
+                b.y -= ny * (overlap / 2)
+
+                # Clamp positions to stay within bounds and above ground
+                a.x = max(0, min(248, a.x))
+                b.x = max(0, min(248, b.x))
+                a.y = min(a.y, ground_y)
+                b.y = min(b.y, ground_y)
+
+def main():
+    running = True
+    balls = [Ball()]
+    last_time = time.time()
+    while running:
+        now = time.time()
+        dt = now - last_time
+        last_time = now
+
+        screen.clear(0)
+        for b in balls:
+            screen.draw_char(b.x, b.y, b.character, 0, b.color)
+        screen.draw_string(0, 0, "Press SPACE to throw!", 0, 5)
+        screen.update()
+
+        # Update all balls and remove old ones
+        for b in balls[:]:
+            b.update(dt)
+            if b.age > b.lifetime:
+                balls.remove(b)
+                audio.play_note("C1", 17, 880, 15, 0.1)
+            elif b.age > (b.lifetime - 0.1): #show pop (dither3) sprite right before removing
+                b.character = 149
+
+        # Handle ball-ball collisions
+        handle_collisions(balls)
+
+        time.sleep(0.016)
+        for get_events:
+            if quit_event:
+                running = False
+            elif resize_event:
+                screen.handle_resize(event)
+            elif key_down_event:
+                if special_key:
+                    running = False
+                if key_SPACE:
+                    balls.append(Ball())
+                if key_RETURN:
+                    for i in range(16):
+                        balls.append(Ball())
+
+main()

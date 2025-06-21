@@ -1,0 +1,67 @@
+import essentials
+import random
+import time
+
+def init_stars(num, maxZ):
+    stars = []
+    for i in range(num):
+        # Format: [current_x, current_y, z, previous_x, previous_y]
+        # Initialize stars with coordinates centered around 0
+        x = random.randint(-128, 128)
+        y = random.randint(-96, 96)
+        z = random.randint(1, maxZ)
+        c = random.randint(1, 23) #color
+        stars.append([x, y, z, x, y, c])
+    return stars
+
+def render_stars(stars, maxZ, trail_speed=0.1):
+    originX = 128
+    originY = 96
+
+    for star in stars:
+        # Store previous position before updating
+        star[3] = star[0]
+        star[4] = star[1]
+        
+        star[2] -= trail_speed
+        
+        #reuse stars
+        if star[2] <= 0:
+            star[2] = maxZ
+            star[0] = random.randint(-128, 128)
+            star[1] = random.randint(-96, 96)
+            star[3] = star[0]  # Reset previous position
+            star[4] = star[1]
+        
+        k = 32 / star[2]
+        x = int(star[0] * k + originX)
+        y = int(star[1] * k + originY)
+        
+        # Calculate previous position
+        k_prev = 32 / (star[2] + trail_speed)
+        prev_x = int(star[3] * k_prev + originX)
+        prev_y = int(star[4] * k_prev + originY)
+
+        if 0 <= x <= 256 and 0 <= y <= 192:
+            screen.draw_line(prev_x, prev_y, x, y, star[5])
+
+def main():
+    stars = init_stars(1024, 16)
+    running = True
+    while running:
+        screen.clear()
+        render_stars(stars, 16, 0.5)
+        screen.update()
+        time.sleep(0.06)
+        
+        for get_events:
+            if quit_event:
+                running = False
+            elif resize_event:
+                screen.handle_resize(event)
+            elif key_down_event:
+                if special_key:
+                    running = False
+    stop()
+
+main()

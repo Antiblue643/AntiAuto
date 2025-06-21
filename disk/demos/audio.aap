@@ -1,0 +1,138 @@
+import essentials
+
+# Audio demo for AntiAuto
+# Plays a note or sample on a selected channel, lets you adjust params
+
+params = ['Channel', 'Sample', 'Note', 'Volume', 'Duration']
+channels = ['L', 'C1', 'C2', 'R', 'Beeper']
+values = [0, 0, 60, 31, 0.5]  # Channel, Sample, Note (MIDI), Volume, Duration
+param_ranges = [(0, 4), (0, 28), (36, 84), (0, 31), (0.05, 2.0)]
+cursorpos = 0
+
+def validate_values():
+    global values
+    # Clamp all values to their ranges
+    for i in range(len(values)):
+        minv, maxv = param_ranges[i]
+        if values[i] < minv:
+            values[i] = minv
+        if values[i] > maxv:
+            values[i] = maxv
+    # If beeper is selected, force sample to 'B'
+    if values[0] == 4:
+        values[1] = 0
+
+def midi_to_note(midi):
+    notes = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B']
+    n = midi % 12
+    o = midi // 12 - 1
+    return notes[n] + str(o)
+def draw_waveform():
+    # Only show for non-beeper channels
+    if values[0] == 4:
+        return
+    try:
+        snd = audio.samples[values[1]]
+        if snd is None:
+            return
+        import pygame.sndarray
+        arr = pygame.sndarray.array(snd)
+        # If stereo, use left channel
+        if arr.ndim == 2:
+            arr = arr[:, 0]
+        length = len(arr)
+        width = 512  # pixels wide for waveform
+        height = 256  # pixels tall for waveform
+        x0 = 112    # left margin
+        y0 = 0     # vertical position (adjust as needed)
+        step = max(1, length // width)
+        mid_y = y0 + height // 2
+        scale = height // 2 * 0.9
+        prev_x = x0
+        prev_y = mid_y
+        for i in range(0, min(length, width * step), step):
+            x = x0 + (i // step)
+            # Normalize sample to -1..1
+            y = mid_y - int((arr[i] / 32768.0) * scale)
+            if i > 0:
+                screen.draw_line(prev_x, prev_y, x, y, 4)
+            prev_x = x
+            prev_y = y
+    except Exception as e:
+        pass  # Ignore errors for missing/invalid samples
+def draw_editor():
+    global cursorpos, values
+    y = 32
+    for i in range(len(params)):
+        c = '<' if i == cursorpos else ''
+        val = values[i]
+        if params[i] == 'Channel':
+            val = channels[val]
+        elif params[i] == 'Sample':
+            if values[0] == 4:
+                val = 'B'
+            else:
+                val = values[i]
+        elif params[i] == 'Note':
+            val = midi_to_note(val)
+        screen.draw_string(16, y, params[i] + ': ' + str(val) + c, 0, 23)
+        y += 32
+
+def adjust_value(delta):
+    global values
+    minv, maxv = param_ranges[cursorpos]
+    if cursorpos == 2:  # Note
+        values[2] += delta
+    elif cursorpos == 4:  # Duration
+        values[4] = round(values[4] + delta * 0.05, 2)
+    else:
+        values[cursorpos] += delta
+    validate_values()
+
+def execute_note():
+    # Play the note/sample using essentials' audio
+    channel = values[0]
+    sample = values[1]
+    midi = values[2]
+    volume = values[3]
+    duration = values[4]
+    freq = 440 * (2 ** ((midi - 69) / 12))
+    if channel == 4:  # Beeper
+        beep(freq, duration)
+    else:
+        play_note(channel, sample, freq, volume, duration)
+
+def main():
+    global cursorpos
+    running = True
+    while running:
+        screen.clear()
+        draw_editor()
+        draw_waveform()
+        screen.draw_string(16, 8, "U/D: Sel, L/R: Val, Ent: Play", 0, 23)
+        screen.draw_string(16, 0, "Spcl: Exit", 0, 23)
+        screen.update()
+        for get_events:
+            if quit_event:
+                running = False
+            elif resize_event:
+                screen.handle_resize(event)
+            elif key_down_event:
+                if special_key:
+                    running = False
+                elif key_UP:
+                    cursorpos = (cursorpos - 1) % len(params)
+                    beep(880, 0.01)
+                elif key_DOWN:
+                    cursorpos = (cursorpos + 1) % len(params)
+                    beep(880, 0.01)
+                elif key_RIGHT:
+                    adjust_value(1)
+                    beep(1320, 0.01)
+                elif key_LEFT:
+                    adjust_value(-1)
+                    beep(660, 0.01)
+                elif key_RETURN:
+                    execute_note()
+
+main()

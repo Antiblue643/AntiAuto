@@ -1,0 +1,50 @@
+#Notepad program
+
+import essentials
+import os
+import random
+
+
+def main():
+    text = ""
+    running = True
+    while running:
+        screen.clear()
+        for get_events:
+            if quit_event:
+                running = False
+            elif resize_event:
+                screen.handle_resize(event)
+            elif key_down_event:
+                if special_key:
+                    running = False
+                elif key_BACKSPACE:
+                    text = text[:-1]
+                elif key_s and init_mods & keymod_CTRL:
+                    with open("notepadSave.txt", "w") as file:
+                        file.write(text)
+                    print("Saved to notepadSave.txt")
+                elif key_o and init_mods & keymod_CTRL:
+                    if os.path.exists("notepadSave.txt"):
+                        with open("notepadSave.txt", "r") as file:
+                            text = file.read()
+                            print("Loaded from notepadSave.txt")
+                    else:
+                        print("notepadSave.txt not found")
+                        beep("A1", 0.5)
+                elif key_n and init_mods & keymod_CTRL:
+                    if os.path.exists("notepadSave.txt"):
+                        os.remove("notepadSave.txt")
+                        print("notepadSave.txt deleted")
+                    else:
+                        print("nothing to delete")
+                    text = ""
+                else:
+                    text += event.unicode
+                    play_note("C1", 0x13, random.randint(220, 440), 31, 0.01)
+
+        screen.draw_string(0, 0, text + "_", 0, 23)
+        screen.update()
+
+main()
+
