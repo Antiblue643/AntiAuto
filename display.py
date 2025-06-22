@@ -1,4 +1,5 @@
 from external import pg
+import re
 
 #The display is a 256x192 per-pixel display. It has 24 colors, and 3 layers (0 is for the solid background color, 1 is for characters, 2 is for a per-pixel layer).
 NATIVE_WIDTH = 256
@@ -112,23 +113,47 @@ class Display:
         x = int(x)
         y = int(y)
         current_x = x
-        i = 0
-        while i < len(string):
-            if string[i] == ':' and ':' in string[i+1:]:
-                # Try to find the next colon
-                end = string.find(':', i+1)
-                if end != -1:
-                    emoji_name = string[i+1:end]
-                    if emoji_name in self.char_map:
-                        self.draw_char(current_x, y, self.char_map[emoji_name], color1, color2)
-                        current_x += 8
-                        i = end + 1
-                        continue
-            char = string[i]
-            if char in self.char_map:
-                self.draw_char(current_x, y, self.char_map[char], color1, color2)
-            current_x += 8
-            i += 1
+        current_y = y
+        char_width = 8
+        char_height = 8
+        max_x = NATIVE_WIDTH
+
+        # Split string into words, keeping spaces and emoji tokens
+        tokens = re.findall(r'\[.*?\]|\S+|\s', string)
+
+        for token in tokens:
+            if token == '\n':
+                current_x = x
+                current_y += char_height
+                continue
+            # Calculate token width in pixels
+            if token.startswith('{') and token.endswith('}') and token[1:-1] in self.char_map:
+                token_width = char_width
+            else:
+                token_width = len(token) * char_width
+
+            # Wrap if needed
+            if current_x + token_width > max_x and current_x != x:
+                current_x = x
+                current_y += char_height
+
+            # Draw token
+            i = 0
+            while i < len(token):
+                if token[i] == '{' and '}' in token[i+1:]:
+                    end = token.find('}', i+1)
+                    if end != -1:
+                        emoji_name = token[i+1:end]
+                        if emoji_name in self.char_map:
+                            self.draw_char(current_x, current_y, self.char_map[emoji_name], color1, color2)
+                            current_x += char_width
+                            i = end + 1
+                            continue
+                char = token[i]
+                if char in self.char_map:
+                    self.draw_char(current_x, current_y, self.char_map[char], color1, color2)
+                current_x += char_width
+                i += 1
 
     def clear(self, color=0):
         self.current_background = color
@@ -139,7 +164,7 @@ class Display:
         display_surface.blit(back_buffer, (0, 0))
         self._scale_to_screen()
         pg.display.update()
-        self.clock.tick()
+        self.clock.tick(60)
         # Remove automatic clearing of back buffer
         # The clear() method should be called explicitly when needed
 

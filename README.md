@@ -8,6 +8,8 @@ The disk has 2 folders: demos/ and experimental/
 Demos are like the VectorMaster, simple, mostly-working demos.
 The experimental folder however, is code I use for testing or messing around. That means it may include code that might work, might not work, or outright crash the emulator.
 
+Also, the pxo folder is for pixelorama (image editing)
+
 ## Features
 
 ### Engine Features
@@ -66,3 +68,7 @@ The experimental folder however, is code I use for testing or messing around. Th
 - Escape: Back/Exit
 - Ctrl+B: Force quit running program
 - Space: Reset/Restart (in supported demos)
+
+## Releases
+- 0.0.0: Inital release (6/20/25)
+- 0.0.1: Added a template for a basic structure of the Antiauto Programs, changed emoji wrapper to {}, added support for wrapping strings and newlines, added characters for gamepad symbols (completing the full character set), created an image converter, fixed framerate issues, and added more experiments. (6/22/25)

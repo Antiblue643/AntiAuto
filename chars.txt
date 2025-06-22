@@ -244,4 +244,15 @@ house 240
 creeper 241
 separator 242
 ` 243
-space 244
+button_a 244
+button_b 245
+button_x 246
+button_y 247
+button_blank 248
+button_start 249
+button_select 250
+joy_u 251
+joy_l 252
+joy_r 253
+joy_d 254
+space 255

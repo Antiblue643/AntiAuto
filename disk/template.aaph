@@ -1,0 +1,17 @@
+import essentials
+
+screen.clear()
+screen.update()
+def main():
+    running = True
+    while running:
+        for get_events:
+            if quit_event:
+                running = False
+            elif resize_event:
+                screen.handle_resize(event)
+            elif key_down_event:
+                if special_key:
+                    running = False
+
+main()

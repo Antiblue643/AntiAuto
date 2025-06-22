@@ -1,0 +1,20 @@
+import essentials
+
+screen.update()
+def main():
+    running = True
+    while running:
+
+        screen.clear()
+        screen.draw_string(0, 0, "Just a test for emojis in filenames.", 0, 23)
+        screen.update()
+        for get_events:
+            if quit_event:
+                running = False
+            elif resize_event:
+                screen.handle_resize(event)
+            elif key_down_event:
+                if special_key:
+                    running = False
+
+main()
