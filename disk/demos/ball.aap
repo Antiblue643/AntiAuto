@@ -7,7 +7,7 @@ gravity = 0.25
 ground_y = 184  # y position for the "ground"
 BALL_RADIUS = 4
 BALL_DIAM = 8
-BALL_CHAR = 219
+BALL_CHAR = (screen.char_map['ball'])[0] #the first index of the ball character's tuple should be the character index
 
 class Ball:
     def __init__(self):
@@ -95,6 +95,7 @@ def main():
         for b in balls:
             screen.draw_char(b.x, b.y, b.character, 0, b.color)
         screen.draw_string(0, 0, "Press SPACE to throw!", 0, 5)
+        screen.draw_string(0, 8, str(BALL_CHAR) if BALL_CHAR != (screen.char_map['ball'])[0] else "", 0, 5)
         screen.update()
 
         # Update all balls and remove old ones
@@ -104,7 +105,7 @@ def main():
                 balls.remove(b)
                 audio.play_note("C1", 17, 880, 15, 0.1)
             elif b.age > (b.lifetime - 0.1): #show pop (dither3) sprite right before removing
-                b.character = 149
+                b.character = screen.char_map['dither3'][0]
 
         # Handle ball-ball collisions
         handle_collisions(balls)

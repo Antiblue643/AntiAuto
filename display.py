@@ -38,21 +38,24 @@ class Display:
     def load_char_map(self):
         char_map = {}
         try:
-            with open('chars.txt', "r", encoding="utf-8") as f:
+            with open('resources/chars.txt', "r", encoding="utf-8") as f:
                 for line in f:
                     line = line.strip()
-                    if not line or line.startswith("//") or "Positions" in line:
+                    if not line:
                         continue
                     parts = line.split()
                     if len(parts) == 2:
                         name, idx = parts
                         try:
-                            char_map[name] = int(idx)
+                            if idx.endswith('f'):
+                                char_map[name] = (int(idx[:-1]), True)  # (index, flip)
+                            else:
+                                char_map[name] = (int(idx), False)
                         except ValueError:
                             continue
         except FileNotFoundError:
             #really bruh
-            quit("Where's the file for the characters? You didn't delete it, did you?\nMake sure it's named chars.txt!")
+            quit("Where's the file for the characters? You didn't delete it, did you?\nMake sure it's named chars.txt and in the resources folder!")
         # Add space as ' ' for convenience if not present
         if "space" in char_map:
             char_map[" "] = char_map["space"]
@@ -64,26 +67,31 @@ class Display:
 
     def loadFont(self):
         #The font is an 128x128 monocolor bitmap image, with 8x8 characters.
-        self.font = pg.image.load("resources/chars.png")  
+        self.font = pg.image.load("resources/charsV2.png")  
     def parseFont(self):
         # Every 8x8 tile is a character, meaning there are 256 characters
-        # The image is 128x128, so we have 16x16 characters
         for y in range(16):
             for x in range(16):
                 char_index = y * 16 + x
-                self.fonts.append(pg.Surface((8, 8)))
-                self.fonts[char_index].blit(self.font, (0, 0), (x * 8, y * 8, 8, 8))
+                # Create a new surface with alpha for each character
+                char_surface = pg.Surface((8, 8), flags=pg.SRCALPHA).convert_alpha()
+                char_surface.blit(self.font, (0, 0), (x * 8, y * 8, 8, 8))
+                self.fonts.append(char_surface)
 
     def loadColors(self):
-        with open("resources/colors.hex", "r") as f:
-            self.colors = f.read().split("\n")
-            # Pre-cache all colors
-            for i, hex_color in enumerate(self.colors):
-                if hex_color:  # Skip empty lines
-                    r = int(hex_color[0:2], 16)
-                    g = int(hex_color[2:4], 16)
-                    b = int(hex_color[4:6], 16)
-                    self.color_cache[i] = (r, g, b)
+        try:
+            with open("resources/colors.hex", "r") as f:
+                self.colors = f.read().split("\n")
+                # Pre-cache all colors
+                for i, hex_color in enumerate(self.colors):
+                    if hex_color:  # Skip empty lines
+                        r = int(hex_color[0:2], 16)
+                        g = int(hex_color[2:4], 16)
+                        b = int(hex_color[4:6], 16)
+                        self.color_cache[i] = (r, g, b)
+                print("Loaded colors.")
+        except FileNotFoundError:
+            quit("No colors file found!")
 
     def draw_pixel(self, x, y, color=23):
         x = int(x)
@@ -97,12 +105,20 @@ class Display:
         y2 = int(y2)
         pg.draw.line(back_buffer, self.color_cache[color], (x1, y1), (x2, y2))
 
-    def draw_char(self, x, y, char, color1=0, color2=23): #color1 is the background color (black in the chars.png), color2 is the foreground color (white in the chars.png)
-
-        if 0 <= char <= len(self.fonts):
+    def draw_char(self, x, y, char, color1=0, color2=23):
+        flip = False
+        if isinstance(char, tuple):
+            char_idx, flip = char
+        else:
+            char_idx = char
+        if 0 <= char_idx < len(self.fonts):
+            # Make a copy so flipping doesn't affect the original
+            font_surface = self.fonts[char_idx].copy()
+            if flip:
+                font_surface = pg.transform.flip(font_surface, True, False)
             for i in range(8):
                 for j in range(8):
-                    pixel_color = self.fonts[char].get_at((i, j))
+                    pixel_color = font_surface.get_at((i, j))
                     # Check if the pixel is white (foreground) or black (background)
                     if pixel_color[0] > 128:  # If the red component is bright, it's white
                         self.draw_pixel(x + i, y + j, color2)
@@ -159,7 +175,9 @@ class Display:
         self.current_background = color
         back_buffer.fill(self.color_cache[color])
 
-    def update(self):
+    def update(self, clear=False): #include clear for convinence
+        if clear:
+            self.clear(0)
         # Swap buffers
         display_surface.blit(back_buffer, (0, 0))
         self._scale_to_screen()
@@ -208,5 +226,15 @@ class Display:
     def shift(self, x, y):
         back_buffer.scroll(x, y)
     
+    def panic(self):
+        self.clear(0)
+        self.update()
+
+    def getMousePos(self):
+        return pg.mouse.get_pos()
+    
+    def getMouseButtons(self):
+        return pg.mouse.get_pressed()
+
     def get_fps(self):
         return self.clock.get_fps()

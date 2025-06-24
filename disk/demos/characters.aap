@@ -1,0 +1,35 @@
+import essentials
+
+
+def get_flipped_variant(char_map, idx):
+    for name, value in char_map.items():
+        if isinstance(value, tuple) and value[0] == idx and value[1] is True:
+            return value  # (index, True)
+    return None  # No flipped variant found
+
+def char_norm():
+    for x in range(16):
+            for y in range(16):
+                i = x + y * 16
+
+                flipped = get_flipped_variant(screen.char_map, i)
+                if flipped:
+                    # Draw the flipped version somewhere else
+                    screen.draw_char((x * 8) + 128, y * 8, flipped)
+                screen.draw_char(x * 8, y * 8, i)
+def main():
+    running = True
+    while running:
+        screen.clear()
+        char_norm()
+        screen.update()
+        for get_events:
+            if quit_event:
+                running = False
+            elif resize_event:
+                screen.handle_resize(event)
+            elif key_down_event:
+                if special_key:
+                    running = False
+
+main()

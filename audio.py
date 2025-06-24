@@ -178,3 +178,8 @@ class Audio:
                 self.channels[channel_idx].play(snd_shifted)
             else:
                 print(f"Sample {sample} not found.")
+
+    def panic(self):
+        for channel in self.channels:
+            channel.stop()
+        self.beeper_channel.stop()
