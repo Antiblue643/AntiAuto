@@ -1,0 +1,30 @@
+import essentials
+import random
+import math
+
+def main():
+    t = 0
+    running = True
+    while running:
+        for get_events:
+            if quit_event:
+                running = False
+            elif resize_event:
+                screen.handle_resize(event)
+            elif key_down_event:
+                if special_key:
+                    running = False
+
+        # Animate parameters
+        t += 1
+        ellipse_x = 32 + int(16 * math.sin(t * 0.05))
+        ellipse_color = 16 + (t // 5) % 8
+        rect_color = 20 + (t // 7) % 3
+
+        screen.clear(0)
+        screen.draw_ellipse(ellipse_x, 24, 16, 8, ellipse_color)
+        screen.draw_rect(16, 64, 96, 96, rect_color)
+        screen.draw_triangle(32, 32, 48, 32, 40, 48, random.randint(16, 23))
+        screen.update()
+
+main()

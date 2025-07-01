@@ -62,6 +62,5 @@ def main():
             elif key_down_event:
                 if special_key:
                     running = False
-    stop()
 
 main()

@@ -2,8 +2,6 @@
 
 # code from programs can use variables (a-z, except t) to dynamically change the expression.
 
-# it also has a simple beep function (frequency, duration).
-
 import pygame as pg
 import array
 import numpy as np

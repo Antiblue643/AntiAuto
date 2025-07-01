@@ -1,0 +1,32 @@
+import essentials
+import math
+
+screen.update(True)
+
+def rows(offset):
+    # Draw several vertical bars, spaced evenly, moving with offset
+    bar_width = 16
+    num_bars = 8
+    for i in range(num_bars):
+        x = int((i * 32 + offset) % 256)  # 256 is screen width
+        screen.draw_rect(x, 0, x + bar_width, 192, i % 2 + 1)  # alternate colors for contrast
+
+def main():
+    t = 0
+    running = True
+    while running:
+        t += 1
+        screen.clear()
+        rows(math.sin(t * 0.05) * 16 + 128)
+        screen.draw_string(0, 0, str(round(screen.get_fps(), 2)))
+        screen.update()
+        for get_events:
+            if quit_event:
+                running = False
+            elif resize_event:
+                screen.handle_resize(event)
+            elif key_down_event:
+                if special_key:
+                    running = False
+
+main()

@@ -1,7 +1,7 @@
-from external import pg
+from external import pg, Settings as s
 import re
 
-#The display is a 256x192 per-pixel display. It has 24 colors, and 3 layers (0 is for the solid background color, 1 is for characters, 2 is for a per-pixel layer).
+#The display is a 256x192 per-pixel display. It has 24 colors.
 NATIVE_WIDTH = 256
 NATIVE_HEIGHT = 192
 
@@ -11,8 +11,7 @@ display_surface = pg.Surface((NATIVE_WIDTH, NATIVE_HEIGHT)).convert()
 back_buffer = pg.Surface((NATIVE_WIDTH, NATIVE_HEIGHT)).convert()  # Add hardware acceleration
 pg.display.set_caption("AAngine")
 pg.display.set_icon(icon)
-
-#takes longer to draw pixels when maximized?
+settings = s()
 
 splash = pg.image.load("resources/splash.png")
 
@@ -88,8 +87,7 @@ class Display:
                         r = int(hex_color[0:2], 16)
                         g = int(hex_color[2:4], 16)
                         b = int(hex_color[4:6], 16)
-                        self.color_cache[i] = (r, g, b)
-                print("Loaded colors.")
+                        self.color_cache[i] = (r, g, b)  # Store as RGB tuple
         except FileNotFoundError:
             quit("No colors file found!")
 
@@ -104,6 +102,29 @@ class Display:
         y1 = int(y1)
         y2 = int(y2)
         pg.draw.line(back_buffer, self.color_cache[color], (x1, y1), (x2, y2))
+
+    def draw_rect(self, x1, y1, x2, y2, color):
+        x1 = int(x1)
+        x2 = int(x2)
+        y1 = int(y1)
+        y2 = int(y2)
+        pg.draw.rect(back_buffer, self.color_cache[color], (x1, y1, x2 - x1, y2 - y1))
+    
+    def draw_ellipse(self, x, y, radiusX, radiusY, color):
+        x = int(x)
+        y = int(y)
+        radiusX = int(radiusX)
+        radiusY = int(radiusY)
+        pg.draw.ellipse(back_buffer, self.color_cache[color], (x - radiusX, y - radiusY, radiusX * 2, radiusY * 2))
+
+    def draw_triangle(self, x1, y1, x2, y2, x3, y3, color):
+        x1 = int(x1)
+        x2 = int(x2)
+        y1 = int(y1)
+        y2 = int(y2)
+        x3 = int(x3)
+        y3 = int(y3)
+        pg.draw.polygon(back_buffer, self.color_cache[color], [(x1, y1), (x2, y2), (x3, y3)])
 
     def draw_char(self, x, y, char, color1=0, color2=23):
         flip = False
@@ -182,7 +203,7 @@ class Display:
         display_surface.blit(back_buffer, (0, 0))
         self._scale_to_screen()
         pg.display.update()
-        self.clock.tick(60)
+        self.clock.tick(settings.fps)
         # Remove automatic clearing of back buffer
         # The clear() method should be called explicitly when needed
 
@@ -231,9 +252,27 @@ class Display:
         self.update()
 
     def getMousePos(self):
-        return pg.mouse.get_pos()
-    
+        # Get mouse position in window coordinates
+        mx, my = pg.mouse.get_pos()
+        window_w, window_h = screen.get_size()
+        scale_factor = min(window_w / NATIVE_WIDTH, window_h / NATIVE_HEIGHT)
+        new_width = int(NATIVE_WIDTH * scale_factor)
+        new_height = int(NATIVE_HEIGHT * scale_factor)
+        offset_x = (window_w - new_width) // 2
+        offset_y = (window_h - new_height) // 2
+
+        # Check if mouse is inside the scaled display area
+        if offset_x <= mx < offset_x + new_width and offset_y <= my < offset_y + new_height:
+            # Map mouse position to native display coordinates
+            native_x = int((mx - offset_x) / scale_factor)
+            native_y = int((my - offset_y) / scale_factor)
+            return (native_x, native_y)
+        else:
+            # Outside display area; return None or clamp to edge
+            return (0, 0)
+
     def getMouseButtons(self):
+        # Get the state of the mouse buttons
         return pg.mouse.get_pressed()
 
     def get_fps(self):

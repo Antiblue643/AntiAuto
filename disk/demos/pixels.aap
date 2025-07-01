@@ -8,7 +8,7 @@ import essentials #neccessary unless you want to add modules manually for some r
 import random #Other modules are optional.
 
 screen.clear(0) #clear screen with color 0 (black)
-screen.type(0, 0, "Pixels Demo!", 0, 7) #draws a string (background color 0, foreground color 7) at the top of the screen. You can also use screen.draw_string() instead.
+screen.draw_string(0, 0, "Pixels Demo!", 0, 7) #draws a string (background color 0, foreground color 7) at the top of the screen. You can also use screen.draw_string() instead.
 
 
 def main(): #Main function.

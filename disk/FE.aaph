@@ -39,24 +39,32 @@ def get_programs():
 
 def draw_list(items, selected, path=""):
     screen.clear(bkg)
-    screen.draw_string(40, 8, "The Antiauto", bkg, 18)
-    
-    if path:
-        screen.draw_string(0, 24, "/" + path, bkg, 23)
+    # Draw Back button if not at root
+    if len(nav_stack) > 1:
+        screen.draw_rect(0, 0, 60, 20, 18)  # Button background
+        screen.draw_string(4, 4, "< Back", 18, 23)
+        title_y = 24
+        path_y = 40
+        list_start_y = 56
     else:
-        screen.draw_string(0, 24, "Select a program:", bkg, 23)
-    
-    y = 40
+        title_y = 8
+        path_y = 24
+        list_start_y = 40
+    screen.draw_string(0, title_y, "File Explorer", bkg, 18)
+    if path:
+        screen.draw_string(0, path_y, "/" + path, bkg, 23)
+    else:
+        screen.draw_string(0, path_y, "Select a program:", bkg, 23)
+    y = list_start_y
     for i in range(len(items)):
         cursor = ">" if i == selected else " "
         prefix = "{curve_tr} " if items[i][0] == "dir" else "  "
         screen.draw_string(0, y, cursor + prefix + items[i][1], bkg, 23)
         y = y + 12
-    
     if path:
-        screen.draw_string(0, 180, "U/D: Sel, Ent: Opn, Esc: Back", bkg, 23)
+        screen.draw_string(0, 180, "Click: Open, Back: Up", bkg, 23)
     else:
-        screen.draw_string(0, 180, "U/D: Sel, Ent: Opn, Esc: shdn", bkg, 23)
+        screen.draw_string(0, 180, "Click: Open, Back: Exit", bkg, 23)
     screen.update()
 
 # Main program
@@ -64,7 +72,7 @@ programs = get_programs()
 if not programs:
     screen.draw_string(0, 8, "No .aap programs found in disk/", bkg, 23)
     screen.update()
-    stop()
+    running = False
 
 nav_stack = [[programs, 0]]
 running = True
@@ -78,37 +86,36 @@ while running:
     path = ""
     for i in range(len(nav_stack) - 1):
         name = nav_stack[i][0][nav_stack[i][1]][1]
-        path = path + "/" + name if path else name
+        path = path + "/" + name if path else name.replace(".aap", "")
     
     draw_list(items, selected, path)
     
     for get_events:
         if quit_event:
-            stop()
+            running = False
         
         if resize_event:
             screen.handle_resize(event)
         
-        if key_down_event:
-            if key_ESCAPE:
-                if len(nav_stack) > 1:
-                    nav_stack.pop()
-                    beep("D#4", 0.05)
-                else:
-                    screen.clear(bkg)
-                    screen.update()
-                    running = False
-                    raise SystemExit
-            
-            if key_UP:
-                nav_stack[-1][1] = (selected - 1) % len(items)
-                beep("C5", 0.05)
-            
-            if key_DOWN:
-                nav_stack[-1][1] = (selected + 1) % len(items)
-                beep("A4", 0.05)
-            if key_RETURN:
-                item = items[selected]
+        mouse_x, mouse_y = screen.getMousePos()
+        if len(nav_stack) > 1:
+            list_start_y = 56
+        else:
+            list_start_y = 40
+        item_height = 12
+        idx = (mouse_y - list_start_y) // item_height
+        if 0 <= idx < len(items):
+            nav_stack[-1][1] = idx  # Hover selects item
+
+        # Check if mouse is over Back button
+        over_back = len(nav_stack) > 1 and (0 <= mouse_x < 60 and 0 <= mouse_y < 20)
+
+        if event.type == pg.MOUSEBUTTONDOWN and event.button == 1:
+            if over_back:
+                nav_stack.pop()
+                beep("D#4", 0.05)
+            elif 0 <= idx < len(items):
+                item = items[idx]
                 if item[0] == "dir":
                     nav_stack.append([item[3], 0])
                     beep("E5", 0.05)
@@ -124,6 +131,4 @@ while running:
                     parser.reset()
                     running = True
                     nav_stack = [[programs, 0]]
-
-stop()
 

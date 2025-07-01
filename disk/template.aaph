@@ -1,7 +1,8 @@
 import essentials
 
-screen.clear()
-screen.update()
+
+screen.update(True)
+
 def main():
     running = True
     while running:

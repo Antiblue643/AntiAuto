@@ -35,7 +35,6 @@ if __name__ == "__main__":
             try:
                 parser.parse_keys("FE.aaph")
                 parser.run()
-                print("Running the file explorer...")
             except SystemExit:
                 parser.reset()
                 break
