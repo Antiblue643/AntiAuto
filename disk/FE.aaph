@@ -7,34 +7,36 @@ import floppy
 import audio
 
 bkg = 9
+htoggle = False
+
 
 def get_programs():
     items = []
-    
     def scan_directory(current_path=""):
         dir_items = []
         full_path = "disk/" + current_path
-        
         # Get all directories first
         for item in os.listdir(full_path):
             item_path = full_path + "/" + item
             relative_path = current_path + "/" + item if current_path else item
-            
             if os.path.isdir(item_path):
                 subitems = scan_directory(relative_path)
                 if subitems:
                     dir_items.append(["dir", item, relative_path, subitems])
-        
-        # Then get all .aap files
+        # Then get all supported files
         for item in os.listdir(full_path):
             item_path = full_path + "/" + item
             relative_path = current_path + "/" + item if current_path else item
-            
-            if os.path.isfile(item_path) and item.endswith(".aap"):
-                dir_items.append(["file", item, relative_path, None])
-        
+            if os.path.isfile(item_path):
+                if item.endswith(".aap"):
+                    dir_items.append(["file", item, relative_path, None, "aap"])
+                if htoggle and item.endswith(".aaph"):
+                    dir_items.append(["file", item, relative_path, None, "aaph"])
+                elif item.endswith(".aai"):
+                    dir_items.append(["file", item, relative_path, None, "aai"])
+                elif item.endswith(".aat"):
+                    dir_items.append(["file", item, relative_path, None, "aat"])
         return sorted(dir_items)
-    
     return scan_directory()
 
 def draw_list(items, selected, path=""):
@@ -58,7 +60,16 @@ def draw_list(items, selected, path=""):
     y = list_start_y
     for i in range(len(items)):
         cursor = ">" if i == selected else " "
-        prefix = "{curve_tr} " if items[i][0] == "dir" else "  "
+        if items[i][0] == "dir":
+            prefix = "{folder} "
+        elif len(items[i]) > 4 and items[i][4] == "aap":
+            prefix = "{save} "
+        elif len(items[i]) > 4 and items[i][4] == "aai":
+            prefix = "{image} "
+        elif len(items[i]) > 4 and items[i][4] == "aat":
+            prefix = "{document} "
+        else:
+            prefix = "X"
         screen.draw_string(0, y, cursor + prefix + items[i][1], bkg, 23)
         y = y + 12
     if path:
@@ -96,7 +107,17 @@ while running:
         
         if resize_event:
             screen.handle_resize(event)
-        
+        if key_down_event:
+            if key_h:
+                htoggle = not htoggle
+                beep("A#4", 0.05)
+                programs = get_programs()  # Refresh list with new toggle state
+                nav_stack = [[programs, 0]]  # Reset navigation stack
+            elif special_key:
+                raise SystemExit()
+            elif key_ESCAPE:
+                raise SystemExit()
+
         mouse_x, mouse_y = screen.getMousePos()
         if len(nav_stack) > 1:
             list_start_y = 56
@@ -110,7 +131,7 @@ while running:
         # Check if mouse is over Back button
         over_back = len(nav_stack) > 1 and (0 <= mouse_x < 60 and 0 <= mouse_y < 20)
 
-        if event.type == pg.MOUSEBUTTONDOWN and event.button == 1:
+        if left_click:
             if over_back:
                 nav_stack.pop()
                 beep("D#4", 0.05)
@@ -124,11 +145,19 @@ while running:
                     screen.clear(bkg)
                     running = False
                     try:
-                        parser.parse_keys(item[2])
-                        parser.run()
+                        # Launch correct program for file type
+                        if len(item) > 4 and item[4] == "aap":
+                            parser.parse_keys(item[2])
+                            parser.run()
+                        elif len(item) > 4 and item[4] == "aai":
+                            parser.parse_keys("paint.aap")
+                            parser.run()
+                        elif len(item) > 4 and item[4] == "aat":
+                            parser.parse_keys("notepad.aap")
+                            parser.run()
                     except:
                         pass
                     parser.reset()
                     running = True
                     nav_stack = [[programs, 0]]
-
+        

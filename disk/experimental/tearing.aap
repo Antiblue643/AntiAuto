@@ -18,7 +18,7 @@ def main():
         t += 1
         screen.clear()
         rows(math.sin(t * 0.05) * 16 + 128)
-        screen.draw_string(0, 0, str(round(screen.get_fps(), 2)))
+        screen.draw_string(0, 0, screen.get_fps())
         screen.update()
         for get_events:
             if quit_event:

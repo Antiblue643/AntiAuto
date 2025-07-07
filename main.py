@@ -4,10 +4,12 @@ import os
 from display import Display as d
 from floppy import Parser as p
 from audio import Audio as a
+from external import Settings as s
 
 screen = d()
 parser = p()
 audio = a()
+settings = s()
 
 def reset_key_repeat():
     pg.key.set_repeat()  # Reset to no key repeat
@@ -20,11 +22,13 @@ def bios():
         print("leftover temp.py deleted, didya crash? Syntax error? 🤔")
     else:
         print("No temp.py to delete... Safe for now... 😝")
-    screen.showSplash()
-    time.sleep(3)
-    audio.beep("B2", 0.1)
-    time.sleep(0.1)
-    audio.beep("A4", 0.1)
+    if settings.showSplash:
+        screen.showSplash()
+        time.sleep(1.5)
+    if settings.startupJingle:
+        for note in ["E3", "A3", "E4"]:
+            audio.beep(note, 0.5)
+            time.sleep(0.1)
 
 
 bios()

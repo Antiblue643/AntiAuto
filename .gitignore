@@ -399,5 +399,6 @@ FodyWeavers.xsd
 
 #antiauto generated files
 temp.py
-notepadSave.txt
+notepadSave.aat
+savedCanvas.aai
 chars_fixed.txt

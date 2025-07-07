@@ -3,10 +3,17 @@
 import essentials
 import os
 import random
+import time
 
 
 def main():
     text = ""
+    if os.path.exists("disk/notepadSave.aat"):
+        with open("disk/notepadSave.aat", "r") as file:
+            text = file.read()
+            print("Loaded from disk/notepadSave.aat")
+    else:
+        print("disk/notepadSave.aat not found")
     running = True
     while running:
         screen.clear()
@@ -21,27 +28,32 @@ def main():
                 elif key_BACKSPACE:
                     text = text[:-1]
                 elif key_s and init_mods & keymod_CTRL:
-                    with open("notepadSave.txt", "w") as file:
+                    with open("disk/notepadSave.aat", "w") as file:
                         file.write(text)
-                    print("Saved to notepadSave.txt")
+                    print("Saved to disk/notepadSave.aat")
                 elif key_o and init_mods & keymod_CTRL:
-                    if os.path.exists("notepadSave.txt"):
-                        with open("notepadSave.txt", "r") as file:
+                    if os.path.exists("disk/notepadSave.aat"):
+                        with open("disk/notepadSave.aat", "r") as file:
                             text = file.read()
-                            print("Loaded from notepadSave.txt")
+                            print("Loaded from disk/notepadSave.aat")
                     else:
-                        print("notepadSave.txt not found")
+                        print("disk/notepadSave.aat not found")
                         beep("A1", 0.5)
                 elif key_n and init_mods & keymod_CTRL:
-                    if os.path.exists("notepadSave.txt"):
-                        os.remove("notepadSave.txt")
-                        print("notepadSave.txt deleted")
+                    if os.path.exists("disk/notepadSave.aat"):
+                        os.remove("disk/notepadSave.aat")
+                        print("disk/notepadSave.aat deleted")
                     else:
                         print("nothing to delete")
                     text = ""
                 else:
                     text += event.unicode
                     play_note("C1", 0x13, random.randint(220, 440), 31, 0.01)
+        if "gaster" in text.lower():
+            for i in range(5):
+                play_note("C1", 0x13, 880/(i + 1), 31, 0.05)
+                time.sleep(0.05)
+            raise SystemExit()
 
         screen.draw_string(0, 0, text + "_", 0, 23)
         screen.update()

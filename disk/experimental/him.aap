@@ -50,7 +50,7 @@ def main():
     running = True
     while running:
         screen.clear()
-        screen.draw_string(0, 0, str(round(screen.get_fps(), 2)))
+        screen.draw_string(0, 0, screen.get_fps())
         sprite((math.sin(t * 0.025) * 64) + 103, (math.cos(t * 0.05) * 32) + 62, True)
         screen.update()
         t += 1

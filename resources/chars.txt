@@ -34,7 +34,7 @@ z 25
 8 33
 9 34
 0 35
-_ 36
+- 36
 = 37
 [ 38
 ] 39
@@ -211,4 +211,16 @@ arrow_r 198
 arrow_l 198f
 { 199
 } 200
-space 201
+save 201
+document 202
+folder 203
+headphones 204
+pause 205
+play 206
+skipfwd 207
+skipback 207f
+upload 208
+download 209
+return 210
+image 211
+space 212

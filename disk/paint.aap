@@ -1,0 +1,188 @@
+import essentials
+
+PALETTE_COLS = 8
+PALETTE_ROWS = 3
+PALETTE_SIZE = 24
+PALETTE_CELL = 12
+TOOL_PEN = 0
+TOOL_ERASER = 1
+TOOL_ELLIPSE = 2
+TOOLS = ["Pen", "Eraser", "Large"]
+
+# Canvas area (adjust as needed)
+CANVAS_X = 8
+CANVAS_Y = 48
+CANVAS_W = 192
+CANVAS_H = 128
+
+# Canvas data: 2D array of color indices
+canvas = [[0 for _ in range(CANVAS_W)] for _ in range(CANVAS_H)]
+
+def draw_palette(selected_color):
+    for i in range(PALETTE_SIZE):
+        x = 8 + (i % PALETTE_COLS) * PALETTE_CELL
+        y = 8 + (i // PALETTE_COLS) * PALETTE_CELL
+        screen.draw_rect(x, y, x + PALETTE_CELL, y + PALETTE_CELL, i)
+        if i == selected_color:
+            screen.draw_rect(x, y, x + PALETTE_CELL, y + PALETTE_CELL, i, 23)
+
+def draw_tools(selected_tool):
+    for i, name in enumerate(TOOLS):
+        x = 120
+        y = 8 + i * 16
+        color = 23 if i == selected_tool else 7
+        screen.draw_string(x, y - 4, name, 0, color)
+
+def draw_buttons():
+    screen.draw_string(200, 8, "{save}", 0, 23)
+    screen.draw_string(200, 24, "{folder}", 0, 23)
+
+def draw_canvas():
+    # Draw a border around the canvas
+    border_color = 7
+    screen.draw_rect(CANVAS_X - 1, CANVAS_Y - 1, CANVAS_X + CANVAS_W + 1, CANVAS_Y + CANVAS_H + 1, border_color)
+    # Draw the actual canvas pixels
+    for y in range(CANVAS_H):
+        for x in range(CANVAS_W):
+            screen.draw_pixel(CANVAS_X + x, CANVAS_Y + y, canvas[y][x])
+
+def get_palette_at(mx, my):
+    for i in range(PALETTE_SIZE):
+        x = 8 + (i % PALETTE_COLS) * PALETTE_CELL
+        y = 8 + (i // PALETTE_COLS) * PALETTE_CELL
+        if x <= mx < x + PALETTE_CELL and y <= my < y + PALETTE_CELL:
+            return i
+    return None
+
+def get_tool_at(mx, my):
+    for i in range(len(TOOLS)):
+        x = 120
+        y = 8 + i * 16
+        if x <= mx < x + 48 and y <= my < y + 12:
+            return i
+    return None
+
+def get_button_at(mx, my):
+    if 200 <= mx < 240 and 8 <= my < 20:
+        return "save"
+    if 200 <= mx < 240 and 24 <= my < 36:
+        return "load"
+    return None
+
+def in_canvas(mx, my):
+    return (CANVAS_X <= mx < CANVAS_X + CANVAS_W and
+            CANVAS_Y <= my < CANVAS_Y + CANVAS_H)
+
+def save_canvas():
+    with open("disk/savedCanvas.aai", "w") as f:
+        for row in canvas:
+            f.write(" ".join(str(c) for c in row) + "\n")
+
+def load_canvas():
+    try:
+        with open("disk/savedCanvas.aai", "r") as f:
+            for y, line in enumerate(f):
+                if y < CANVAS_H:
+                    row = [int(c) for c in line.strip().split()]
+                    for x in range(min(CANVAS_W, len(row))):
+                        canvas[y][x] = row[x]
+    except:
+        pass
+
+load_canvas()
+screen.clear()
+screen.update()
+def main():
+    running = True
+    color = 23
+    tool = TOOL_PEN
+    prev_x = None
+    prev_y = None
+    while running:
+        mouse_x, mouse_y = screen.getMousePos()
+        screen.update()
+        draw_palette(color)
+        draw_tools(tool)
+        draw_buttons()
+        draw_canvas()
+        for get_events:
+            if quit_event:
+                running = False
+            elif resize_event:
+                screen.handle_resize(event)
+            elif key_down_event:
+                if special_key:
+                    running = False
+                if key_c:
+                    for y in range(CANVAS_H):
+                        for x in range(CANVAS_W):
+                            canvas[y][x] = 0
+                    screen.clear()
+                    screen.update()
+            elif mouse_held_0:
+                # Palette selection
+                sel = get_palette_at(mouse_x, mouse_y)
+                if sel is not None:
+                    color = sel
+                    continue
+                # Tool selection
+                tsel = get_tool_at(mouse_x, mouse_y)
+                if tsel is not None:
+                    tool = tsel
+                    continue
+                # Button selection
+                bsel = get_button_at(mouse_x, mouse_y)
+                if bsel == "save":
+                    save_canvas()
+                    continue
+                elif bsel == "load":
+                    load_canvas()
+                    continue
+                # Drawing (only inside canvas)
+                if in_canvas(mouse_x, mouse_y):
+                    cx = mouse_x - CANVAS_X
+                    cy = mouse_y - CANVAS_Y
+                    if tool == TOOL_PEN:
+                        if prev_x is not None and prev_y is not None:
+                            dx = mouse_x - prev_x
+                            dy = mouse_y - prev_y
+                            steps = max(abs(dx), abs(dy))
+                            if steps > 0:
+                                for i in range(steps + 1):
+                                    ix = int(prev_x + dx * i / steps) - CANVAS_X
+                                    iy = int(prev_y + dy * i / steps) - CANVAS_Y
+                                    if 0 <= ix < CANVAS_W and 0 <= iy < CANVAS_H:
+                                        canvas[iy][ix] = color
+                            else:
+                                if 0 <= cx < CANVAS_W and 0 <= cy < CANVAS_H:
+                                    canvas[cy][cx] = color
+                        else:
+                            if 0 <= cx < CANVAS_W and 0 <= cy < CANVAS_H:
+                                canvas[cy][cx] = color
+                    elif tool == TOOL_ERASER:
+                        for oy in range(-6, 7):
+                            for ox in range(-6, 7):
+                                ex = cx + ox
+                                ey = cy + oy
+                                if 0 <= ex < CANVAS_W and 0 <= ey < CANVAS_H:
+                                    canvas[ey][ex] = 0
+                    elif tool == TOOL_ELLIPSE:
+                        # Simple filled ellipse
+                        rx, ry = 8, 8
+                        for oy in range(-ry, ry + 1):
+                            for ox in range(-rx, rx + 1):
+                                if (ox*ox)/(rx*rx) + (oy*oy)/(ry*ry) <= 1:
+                                    ex = cx + ox
+                                    ey = cy + oy
+                                    if 0 <= ex < CANVAS_W and 0 <= ey < CANVAS_H:
+                                        canvas[ey][ex] = color
+                    prev_x = mouse_x
+                    prev_y = mouse_y
+                else:
+                    prev_x = None
+                    prev_y = None
+            else:
+                prev_x = None
+                prev_y = None
+
+main()

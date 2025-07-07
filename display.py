@@ -1,5 +1,6 @@
 from external import pg, Settings as s
 import re
+import random
 
 #The display is a 256x192 per-pixel display. It has 24 colors.
 NATIVE_WIDTH = 256
@@ -14,6 +15,9 @@ pg.display.set_icon(icon)
 settings = s()
 
 splash = pg.image.load("resources/splash.png")
+
+
+cl = settings.corruptLevel
 
 pg.init()
 
@@ -66,7 +70,7 @@ class Display:
 
     def loadFont(self):
         #The font is an 128x128 monocolor bitmap image, with 8x8 characters.
-        self.font = pg.image.load("resources/charsV2.png")  
+        self.font = pg.image.load("resources/chars.png")  
     def parseFont(self):
         # Every 8x8 tile is a character, meaning there are 256 characters
         for y in range(16):
@@ -92,10 +96,14 @@ class Display:
             quit("No colors file found!")
 
     def draw_pixel(self, x, y, color=23):
-        x = int(x)
-        y = int(y)
-        if 0 <= color < len(self.colors) and 0 <= x < NATIVE_WIDTH and 0 <= y < NATIVE_HEIGHT:
-            back_buffer.set_at((x, y), self.color_cache.get(color, self.color_cache[color]))
+            x = int(x)
+            y = int(y)
+            if settings.corruptDisplay:
+                #x = x + ((y + cl & 8 - color) - y)
+                color += (x & 8 ^ (y + random.randint(-cl, cl)) % 24)
+            if 0 <= color < len(self.colors) and 0 <= x < NATIVE_WIDTH and 0 <= y < NATIVE_HEIGHT:
+                back_buffer.set_at((x, y), self.color_cache.get(color, self.color_cache[color]))
+    
     def draw_line(self, x1, y1, x2, y2, color):
         x1 = int(x1)
         x2 = int(x2)
@@ -103,12 +111,16 @@ class Display:
         y2 = int(y2)
         pg.draw.line(back_buffer, self.color_cache[color], (x1, y1), (x2, y2))
 
-    def draw_rect(self, x1, y1, x2, y2, color):
+    def draw_rect(self, x1, y1, x2, y2, color, outlineColor=None):
         x1 = int(x1)
         x2 = int(x2)
         y1 = int(y1)
         y2 = int(y2)
+        # Draw filled rectangle
         pg.draw.rect(back_buffer, self.color_cache[color], (x1, y1, x2 - x1, y2 - y1))
+        # Draw outline if outlineColor is not None
+        if outlineColor is not None:
+            pg.draw.rect(back_buffer, self.color_cache[outlineColor], (x1, y1, x2 - x1, y2 - y1), 1)
     
     def draw_ellipse(self, x, y, radiusX, radiusY, color):
         x = int(x)
@@ -199,6 +211,8 @@ class Display:
     def update(self, clear=False): #include clear for convinence
         if clear:
             self.clear(0)
+        if settings.showFPS:
+            self.draw_string(0, 0, self.get_fps(), 0, 23)
         # Swap buffers
         display_surface.blit(back_buffer, (0, 0))
         self._scale_to_screen()
@@ -251,7 +265,7 @@ class Display:
         self.clear(0)
         self.update()
 
-    def getMousePos(self):
+    def getMousePos(self, debug=False):
         # Get mouse position in window coordinates
         mx, my = pg.mouse.get_pos()
         window_w, window_h = screen.get_size()
@@ -266,6 +280,10 @@ class Display:
             # Map mouse position to native display coordinates
             native_x = int((mx - offset_x) / scale_factor)
             native_y = int((my - offset_y) / scale_factor)
+            if debug:
+                self.draw_line(native_x, 0, native_x, NATIVE_HEIGHT - 1, 12)
+                self.draw_line(0, native_y, NATIVE_WIDTH - 1, native_y, 12)
+                self.draw_string(native_x, native_y, f"{native_x}, {native_y}", 12, 22)
             return (native_x, native_y)
         else:
             # Outside display area; return None or clamp to edge
@@ -276,4 +294,5 @@ class Display:
         return pg.mouse.get_pressed()
 
     def get_fps(self):
-        return self.clock.get_fps()
+        fps = self.clock.get_fps().__round__(2)
+        return str(fps)

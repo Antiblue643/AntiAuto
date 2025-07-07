@@ -75,3 +75,16 @@ Also, the pxo folder is for pixelorama (image editing)
 - 0.0.1: Added a template for a basic structure of the Antiauto Programs, changed emoji wrapper to {}, added support for wrapping strings and newlines, added characters for gamepad symbols (completing the full character set), created an image converter, fixed framerate issues, and added more experiments. (6/22/25)
 - 0.0.2: Added many new functions for the display (mouse support, update with clear, panic), added panic for audio, added support for characters to be vertically flipped and removed the mini-alphabet in the chars.txt file (freeing up a whopping 57 characters), reverted the gamepad button characters, added mouse button characters and the horizontal arrow, added characters demo & a character map updater tool. I'm hoping to update the OS a lot more so that it doesn't copy the VectorMaster.
 - 0.0.3: Fixed the mouse position handling, added characters for curly brackets, added methods in the parser for getting mouse buttons and keys pressed down, removed some unused parser keys, added a basic paint program demo, added more experiments, refactored some code, updated comments, added mouse control to the file explorer, and added many new methods of drawing to the display (rect, circle, and triangle).
+- 0.0.4: Made it so that the notepad saves .aat (AntiAuto Text) files instead of .txt, tweaked and made some minor changes to some demos, added new characters, redid paint app (saves .aai files (antiauto image)), added some more options to settings, added click events to the parser, outline support for rects, and added icons in the file explorer.
+
+
+## The future?
+I'm hoping to add more features to the AntiAuto, such as:
+- More demos
+- More experiments
+- Plenty of optimizations
+- Extra settings
+- Better GUI
+- Better OS
+
+I'm considering rewriting the whole thing in C or C++ for compatibility, but I don't know if I will do that. If I do, it will be a while before I do it. It'll either be a rewrite or fork.
