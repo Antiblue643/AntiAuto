@@ -212,7 +212,7 @@ class Display:
         if clear:
             self.clear(0)
         if settings.showFPS:
-            self.draw_string(0, 0, self.get_fps(), 0, 23)
+            self.draw_string(0, 0, self.get_fps(), -1, 23)
         # Swap buffers
         display_surface.blit(back_buffer, (0, 0))
         self._scale_to_screen()

@@ -115,8 +115,8 @@ clock_12 113
 clock_3 114
 clock_6 115
 clock_9 114f
-up_arrow 116
-down_arrow 117
+arrow_up 116
+arrow_down 117
 bar_t 118
 bar_b 119
 bar_l 120

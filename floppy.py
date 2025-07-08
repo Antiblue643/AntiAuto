@@ -25,7 +25,9 @@ class Parser:
             'keymod_': 'pg.KMOD_',
             'left_click': "event.type == pg.MOUSEBUTTONDOWN and event.button == 1",
             'middle_click': "event.type == pg.MOUSEBUTTONDOWN and event.button == 2",
-            'right_click': "event.type == pg.MOUSEBUTTONDOWN and event.button == 3"
+            'right_click': "event.type == pg.MOUSEBUTTONDOWN and event.button == 3",
+            'obtain_keys_held()': 'pg.key.get_pressed()',
+            'keycode_': 'pg.K_',
         }
     def parse_keys(self, filename): #take all the lines, parse them, remove comments, and put them into a temporary file
         file_path = os.path.join(diskpath, filename)
