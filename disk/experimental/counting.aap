@@ -1,0 +1,30 @@
+import essentials
+
+
+screen.update(True)
+
+def main():
+    i = 0
+    running = True
+    while running:
+        screen.clear()
+        screen.draw_string(0, 0, "{bin_indicator}" + bin(i // 8 % 4294967295)[2:], -1, 23)
+        screen.draw_string(0, 8, "{hex_indicator}" + hex(i // 8 % 4294967295)[2:].upper(), -1, 23)
+        screen.draw_string(0, 16, str(i // 8 % 4294967295), -1, 23)
+        screen.draw_string(187, 0, screen.get_fps(), -1, 23)
+        s = (4294967295 - i // (screen.get_fps("int") + 1))
+        d = s // (60 * 60 * 24 * 365.25 * 10)
+        screen.draw_string(0, 132, f'You will reach your destination in {s} seconds ({d} decades)', -1, 23) #blagh
+        
+        screen.update()
+        i += 1
+        for get_events:
+            if quit_event:
+                running = False
+            elif resize_event:
+                screen.handle_resize(event)
+            elif key_down_event:
+                if special_key:
+                    running = False
+
+main()

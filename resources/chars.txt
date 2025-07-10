@@ -176,10 +176,10 @@ circle3 165
 triangle 166
 line_diag1 167
 line_top 168
-line_diag2 168f
+line_diag2 167f
 line_right 169
 line_bottom 170
-line_left 170f
+line_left 169f
 ball 171
 stop_sign 172
 snowflake 173
@@ -223,4 +223,10 @@ upload 208
 download 209
 return 210
 image 211
-space 212
+music_note 212
+cross_box 213
+checkered 214
+checkered_reverse 214f
+hex_indicator 215
+bin_indicator 216
+space 217

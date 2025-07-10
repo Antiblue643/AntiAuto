@@ -71,13 +71,13 @@ Also, the pxo folder is for pixelorama (image editing)
 - Space: Reset/Restart (in supported demos)
 
 ## Releases
-- 0.0.0: Inital release (6/20/25)
-- 0.0.1: Added a template for a basic structure of the Antiauto Programs, changed emoji wrapper to {}, added support for wrapping strings and newlines, added characters for gamepad symbols (completing the full character set), created an image converter, fixed framerate issues, and added more experiments. (6/22/25)
-- 0.0.2: Added many new functions for the display (mouse support, update with clear, panic), added panic for audio, added support for characters to be vertically flipped and removed the mini-alphabet in the chars.txt file (freeing up a whopping 57 characters), reverted the gamepad button characters, added mouse button characters and the horizontal arrow, added characters demo & a character map updater tool. I'm hoping to update the OS a lot more so that it doesn't copy the VectorMaster.
-- 0.0.3: Fixed the mouse position handling, added characters for curly brackets, added methods in the parser for getting mouse buttons and keys pressed down, removed some unused parser keys, added a basic paint program demo, added more experiments, refactored some code, updated comments, added mouse control to the file explorer, and added many new methods of drawing to the display (rect, circle, and triangle).
-- 0.0.4: Made it so that the notepad saves .aat (AntiAuto Text) files instead of .txt, tweaked and made some minor changes to some demos, added new characters, redid paint app (saves .aai files (antiauto image)), added some more options to settings, added click events to the parser, outline support for rects, and added icons in the file explorer.
-- 0.0.5: Realized that -1 for the color index creates a transparent effect, added support for GIFs and APNGs in the sprite creator, completely redid the tobyfox demo (Now called deltarune_battle), and made more experiments.
-
+- 0.0.0α: Inital release (6/20/25)
+- 0.0.1α: Added a template for a basic structure of the Antiauto Programs, changed emoji wrapper to {}, added support for wrapping strings and newlines, added characters for gamepad symbols (completing the full character set), created an image converter, fixed framerate issues, and added more experiments. (6/22/25)
+- 0.0.2α: Added many new functions for the display (mouse support, update with clear, panic), added panic for audio, added support for characters to be vertically flipped and removed the mini-alphabet in the chars.txt file (freeing up a whopping 57 characters), reverted the gamepad button characters, added mouse button characters and the horizontal arrow, added characters demo & a character map updater tool. I'm hoping to update the OS a lot more so that it doesn't copy the VectorMaster.
+- 0.0.3α: Fixed the mouse position handling, added characters for curly brackets, added methods in the parser for getting mouse buttons and keys pressed down, removed some unused parser keys, added a basic paint program demo, added more experiments, refactored some code, updated comments, added mouse control to the file explorer, and added many new methods of drawing to the display (rect, circle, and triangle).
+- 0.0.4α: Made it so that the notepad saves .aat (AntiAuto Text) files instead of .txt, tweaked and made some minor changes to some demos, added new characters, redid paint app (saves .aai files (antiauto image)), added some more options to settings, added click events to the parser, outline support for rects, and added icons in the file explorer.
+- 0.0.5α: Realized that -1 for the color index creates a transparent effect, added support for GIFs and APNGs in the sprite creator, completely redid the tobyfox demo (Now called deltarune_battle), and made more experiments.
+- 0.0.6α: Updated characters (and fixed some flipped ones in the process), shrunk gitignore, refactored some code and demos, added Webp support for the sprite creator, added experiments, and added file sizes to the file explorer.
 
 ## The future?
 I'm hoping to add more features to the AntiAuto, such as:

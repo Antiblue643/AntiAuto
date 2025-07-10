@@ -6,7 +6,6 @@ import os
 import floppy
 import audio
 
-bkg = 9
 htoggle = False
 
 
@@ -40,11 +39,11 @@ def get_programs():
     return scan_directory()
 
 def draw_list(items, selected, path=""):
-    screen.clear(bkg)
+    screen.clear(9)
     # Draw Back button if not at root
     if len(nav_stack) > 1:
         screen.draw_rect(0, 0, 60, 20, 18)  # Button background
-        screen.draw_string(4, 4, "< Back", 18, 23)
+        screen.draw_string(4, 4, "< Back", -1, 23)
         title_y = 24
         path_y = 40
         list_start_y = 56
@@ -52,12 +51,14 @@ def draw_list(items, selected, path=""):
         title_y = 8
         path_y = 24
         list_start_y = 40
-    screen.draw_string(0, title_y, "File Explorer", bkg, 18)
+    screen.draw_string(0, title_y, "File Explorer", -1, 18)
+    screen.draw_string(0, title_y + 8, "Hoax OS - 0.0.6", -1, 18)
     if path:
-        screen.draw_string(0, path_y, "/" + path, bkg, 23)
+        screen.draw_string(0, path_y, "/" + path, -1, 23)
     else:
-        screen.draw_string(0, path_y, "Select a program:", bkg, 23)
+        screen.draw_string(0, path_y, "Select a program:", -1, 23)
     y = list_start_y
+    total_size = 0
     for i in range(len(items)):
         cursor = ">" if i == selected else " "
         if items[i][0] == "dir":
@@ -70,20 +71,30 @@ def draw_list(items, selected, path=""):
             prefix = "{document} "
         else:
             prefix = "X"
-        screen.draw_string(0, y, cursor + prefix + items[i][1], bkg, 23)
+        # Add new field to display file size
+        file_size = round((os.path.getsize(os.path.join("disk", path, items[i][1])))/1024, 2)
+        total_size += os.path.getsize(os.path.join("disk", path, items[i][1]))
+        screen.draw_string(0, y, cursor + prefix + items[i][1] + f" ({file_size}kb)", -1, 23)
         y = y + 12
     if path:
-        screen.draw_string(0, 180, "Click: Open, Back: Up", bkg, 23)
+        screen.draw_string(0, 180, "Click: Open, Back: Up", -1, 23)
     else:
-        screen.draw_string(0, 180, "Click: Open, Back: Exit", bkg, 23)
+        screen.draw_string(0, 180, "Click: Open, Back: Exit", -1, 23)
+    #total current folder size
+    emote = '{line_top}{line_diag2}{line_bottom}{confused}{line_bottom}{line_diag1}{line_top}'
+    if 64000 - total_size > 0:
+        too_big = False
+    else:
+        too_big = True
+    remaining_size = str(round(abs(64000 - total_size)/1024, 2)) + "kb"
+    screen.draw_string(0, 164, f"Folder: {(total_size)/1024:.2f}kb ({remaining_size if too_big else emote})", -1, 23)
     screen.update()
 
 # Main program
 programs = get_programs()
 if not programs:
-    screen.draw_string(0, 8, "No .aap programs found in disk/", bkg, 23)
+    screen.draw_string(0, 8, "No .aap programs found in disk/... WHY?", -1, 23)
     screen.update()
-    running = False
 
 nav_stack = [[programs, 0]]
 running = True
@@ -100,7 +111,6 @@ while running:
         path = path + "/" + name if path else name.replace(".aap", "")
     
     draw_list(items, selected, path)
-    
     for get_events:
         if quit_event:
             running = False
@@ -142,7 +152,7 @@ while running:
                     beep("E5", 0.05)
                 else:
                     beep("A5", 0.05)
-                    screen.clear(bkg)
+                    screen.clear(9)
                     running = False
                     try:
                         # Launch correct program for file type
@@ -160,4 +170,3 @@ while running:
                     parser.reset()
                     running = True
                     nav_stack = [[programs, 0]]
-        

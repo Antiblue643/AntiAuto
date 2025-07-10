@@ -86,6 +86,7 @@ def load_canvas():
                     row = [int(c) for c in line.strip().split()]
                     for x in range(min(CANVAS_W, len(row))):
                         canvas[y][x] = row[x]
+        screen.clear()
     except:
         pass
 

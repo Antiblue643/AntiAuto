@@ -119,8 +119,7 @@ class Audio:
             return note
 
     def beep(self, freq, duration):
-        if isinstance(freq, str):
-            freq = self.note_to_freq(freq)
+        freq = self.note_to_freq(freq)
         # Generate 1-bit square wave for beeper (mono)
         sample_rate = 44100
         t = np.linspace(0, duration, int(sample_rate * duration), False)

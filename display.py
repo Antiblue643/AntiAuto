@@ -293,6 +293,10 @@ class Display:
         # Get the state of the mouse buttons
         return pg.mouse.get_pressed()
 
-    def get_fps(self):
-        fps = self.clock.get_fps().__round__(2)
-        return str(fps)
+    def get_fps(self, type="str"):
+        if type == "str":
+            fps = self.clock.get_fps().__round__(2)
+            return str(fps)
+        elif type == "int":
+            fps = self.clock.get_fps().__round__(0)
+            return int(float(fps))

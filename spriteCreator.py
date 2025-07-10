@@ -1,4 +1,4 @@
-# Converts a PNG to a sprite function for The AntiAuto
+# Converts an Image to a sprite function for The AntiAuto
 
 import tkinter as tk
 from tkinter import filedialog
@@ -23,9 +23,9 @@ def closest_color_index(rgb, palette):
     diffs = [(sum((c1-c2)**2 for c1, c2 in zip(rgb, p)), i) for i, p in enumerate(palette)]
     return min(diffs)[1]
 
-def png_to_sprite_function(png_path, func_name="sprite"):
+def image_to_sprite_function(image_path, func_name="sprite"):
     palette = load_palette()
-    img = Image.open(png_path)
+    img = Image.open(image_path)
     width, height = img.size
 
     # Check if the image is animated (multiple frames)
@@ -84,12 +84,12 @@ def png_to_sprite_function(png_path, func_name="sprite"):
 def main():
     root = tk.Tk()
     root.withdraw()
-    file_path = filedialog.askopenfilename(title="Select PNG", filetypes=[("PNG files", "*.png"), ("GIF files", "*.gif"), ("APNG files", "*.apng")])
+    file_path = filedialog.askopenfilename(title="Select PNG", filetypes=[("All", ["*.png", "*.gif", "*.apng", "*.webp"]), ("PNG files", "*.png"), ("GIF files", "*.gif"), ("APNG files", "*.apng"), ("Webp files", "*.gif")])
     if not file_path:
         print("No file selected.")
         return
     func_name = os.path.splitext(os.path.basename(file_path))[0]
-    code = png_to_sprite_function(file_path, func_name)
+    code = image_to_sprite_function(file_path, func_name)
     with open("spriteOutput.txt", "w") as f:
         f.write(code)
 
