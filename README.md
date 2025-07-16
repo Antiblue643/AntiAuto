@@ -10,6 +10,8 @@ The experimental folder however, is code I use for testing or messing around. Th
 
 Also, the pxo folder is for pixelorama (image editing)
 
+**Tested on Windows 11 and Manjaro Linux**
+
 ## Features
 
 ### Engine Features
@@ -37,11 +39,16 @@ Also, the pxo folder is for pixelorama (image editing)
 - **Pixels**: Random Pixels
 - **Audio**: Audio tester/visualizer
 - **Ball**: A bouncy ball/bubble physics demo
-- **Notepad**: A simple notepad
-- **Toby Fox**: A very (slightly less) buggy Undertale/Deltarune-style battle system demo
-- **Music**: A test script for playing music
+- **Deltarune Battle**: An Undertale/Deltarune-style battle system demo
 - **Sorting**: A sorting algorithm demo
 - *And more!*
+
+### System Programs
+- **Notepad**: A Notepad
+- **Paint**: A paint program
+- (TODO) **Music**: A music playback program
+- **FE**: The (hidden) File explorer
+- **Template**: A (hidden) starting template for the main structure of programs (for more info read the comments in the pixels demo, or look at how floppy.py handles things 🤷‍♂️)
 
 ### Input Handling
 - Keyboard input support
@@ -57,18 +64,24 @@ Also, the pxo folder is for pixelorama (image editing)
 4. Press Ctrl+B to exit any running program
 5. Use Escape to navigate back or exit the file browser
 
+## Non-Engine Tools
+- **spriteCreator.py**: Converts images/animations into functions to be used into programs (png, gif, apng, webp).
+- **progdebug.py**: Parses programs without running them & deleting the temp.py
+- **charmap_updater.py**: Changes indices of the character map if something has been deleted (sometimes unreliable).
+- **audiotest.py**: Various tests for the audio system.
+- **vectorUpgrader.py**: Updates Vectormaster programs to the Antiauto's format.
+
 ## Dependencies
 
 - Python 3.10+ (I'm using 3.13.1)
 - Pygame 2.5.0+ (I'm using 2.6.1)
+- Numpy 2.1.3+ (I'm using 2.1.3)
 
 ## Controls
 
-- Arrow keys: Navigate menus and control demos
-- Enter: Select/Confirm
+- Mouse: Navigate
 - Escape: Back/Exit
 - Ctrl+B: Force quit running program
-- Space: Reset/Restart (in supported demos)
 
 ## Releases
 - 0.0.0α: Inital release (6/20/25)
@@ -78,6 +91,7 @@ Also, the pxo folder is for pixelorama (image editing)
 - 0.0.4α: Made it so that the notepad saves .aat (AntiAuto Text) files instead of .txt, tweaked and made some minor changes to some demos, added new characters, redid paint app (saves .aai files (antiauto image)), added some more options to settings, added click events to the parser, outline support for rects, and added icons in the file explorer.
 - 0.0.5α: Realized that -1 for the color index creates a transparent effect, added support for GIFs and APNGs in the sprite creator, completely redid the tobyfox demo (Now called deltarune_battle), and made more experiments.
 - 0.0.6α: Updated characters (and fixed some flipped ones in the process), shrunk gitignore, refactored some code and demos, added Webp support for the sprite creator, added experiments, and added file sizes to the file explorer.
+- 0.0.6β: Mostly refactoring/tweaking code, added semi-support for vectormaster syntax, and compressed aai images.
 
 ## The future?
 I'm hoping to add more features to the AntiAuto, such as:

@@ -73,19 +73,50 @@ def in_canvas(mx, my):
     return (CANVAS_X <= mx < CANVAS_X + CANVAS_W and
             CANVAS_Y <= my < CANVAS_Y + CANVAS_H)
 
+def rle_encode(data):
+    encoded = []
+    count = 1
+    prev = data[0]
+    for pixel in data[1:]:
+        if pixel == prev:
+            count += 1
+        else:
+            encoded.append((count, prev))
+            count = 1
+            prev = pixel
+    encoded.append((count, prev))
+    return encoded
+
+def rle_decode(encoded):
+    decoded = []
+    for count, value in encoded:
+        decoded.extend([value] * count)
+    return decoded
+
 def save_canvas():
     with open("disk/savedCanvas.aai", "w") as f:
-        for row in canvas:
-            f.write(" ".join(str(c) for c in row) + "\n")
+        # Convert canvas data to a single list of color indices
+        flat_canvas = [pixel for row in canvas for pixel in row]
+        encoded = rle_encode(flat_canvas)
+        # Write the RLE-encoded data to the file
+        for count, value in encoded:
+            f.write(f"{count}_{value} ")
+        f.write("\n")
 
 def load_canvas():
     try:
         with open("disk/savedCanvas.aai", "r") as f:
-            for y, line in enumerate(f):
-                if y < CANVAS_H:
-                    row = [int(c) for c in line.strip().split()]
-                    for x in range(min(CANVAS_W, len(row))):
-                        canvas[y][x] = row[x]
+            data = f.read().strip()
+            parts = [part.split("_") for part in data.split()]
+            flat_encoded = [(int(count), int(value)) for count, value in parts]
+            flat_canvas = rle_decode(flat_encoded)
+            # Reconstruct the 2D canvas array from the flattened list
+            index = 0
+            for y in range(CANVAS_H):
+                for x in range(CANVAS_W):
+                    if index < len(flat_canvas):
+                        canvas[y][x] = flat_canvas[index]
+                    index += 1
         screen.clear()
     except:
         pass

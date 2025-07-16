@@ -1,4 +1,4 @@
-#parses the vector to a temporary file to be used by the main program
+#parses the program to a temporary file to be used by the main script
 #It gets messy sometimes, y'know? Code generating code.
 
 
@@ -28,6 +28,9 @@ class Parser:
             'right_click': "event.type == pg.MOUSEBUTTONDOWN and event.button == 3",
             'obtain_keys_held()': 'pg.key.get_pressed()',
             'keycode_': 'pg.K_',
+            #Attempt some vectormaster stuffs
+            'draw_dot': 'draw_pixel',
+            'tone': 'play_note' #Volume & frequency will need to be swapped
         }
     def parse_keys(self, filename): #take all the lines, parse them, remove comments, and put them into a temporary file
         file_path = os.path.join(diskpath, filename)
@@ -48,7 +51,6 @@ class Parser:
             for k, v in self.key.items():
                 processed_line = processed_line.replace(k, v)
             
-            # --- Add these lines for automatic brackets ---
             # Replace key_held_X with pg.key.get_pressed()[pg.K_X]
             processed_line = re.sub(
                 r'key_held_([a-zA-Z0-9_]+)',

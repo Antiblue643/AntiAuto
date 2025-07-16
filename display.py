@@ -103,15 +103,15 @@ class Display:
                 color += (x & 8 ^ (y + random.randint(-cl, cl)) % 24)
             if 0 <= color < len(self.colors) and 0 <= x < NATIVE_WIDTH and 0 <= y < NATIVE_HEIGHT:
                 back_buffer.set_at((x, y), self.color_cache.get(color, self.color_cache[color]))
-    
-    def draw_line(self, x1, y1, x2, y2, color):
+
+    def draw_line(self, x1, y1, x2, y2, color=23):
         x1 = int(x1)
         x2 = int(x2)
         y1 = int(y1)
         y2 = int(y2)
         pg.draw.line(back_buffer, self.color_cache[color], (x1, y1), (x2, y2))
 
-    def draw_rect(self, x1, y1, x2, y2, color, outlineColor=None):
+    def draw_rect(self, x1, y1, x2, y2, color=23, outlineColor=None):
         x1 = int(x1)
         x2 = int(x2)
         y1 = int(y1)
@@ -122,14 +122,14 @@ class Display:
         if outlineColor is not None:
             pg.draw.rect(back_buffer, self.color_cache[outlineColor], (x1, y1, x2 - x1, y2 - y1), 1)
     
-    def draw_ellipse(self, x, y, radiusX, radiusY, color):
+    def draw_ellipse(self, x, y, radiusX, radiusY, color=23):
         x = int(x)
         y = int(y)
         radiusX = int(radiusX)
         radiusY = int(radiusY)
         pg.draw.ellipse(back_buffer, self.color_cache[color], (x - radiusX, y - radiusY, radiusX * 2, radiusY * 2))
 
-    def draw_triangle(self, x1, y1, x2, y2, x3, y3, color):
+    def draw_triangle(self, x1, y1, x2, y2, x3, y3, color=23):
         x1 = int(x1)
         x2 = int(x2)
         y1 = int(y1)
@@ -138,7 +138,7 @@ class Display:
         y3 = int(y3)
         pg.draw.polygon(back_buffer, self.color_cache[color], [(x1, y1), (x2, y2), (x3, y3)])
 
-    def draw_char(self, x, y, char, color1=0, color2=23):
+    def draw_char(self, x, y, char, color1=-1, color2=23):
         flip = False
         if isinstance(char, tuple):
             char_idx, flip = char
@@ -212,7 +212,12 @@ class Display:
         if clear:
             self.clear(0)
         if settings.showFPS:
-            self.draw_string(0, 0, self.get_fps(), -1, 23)
+            self.draw_string(0, 0, self.get_fps(), 0, 23)
+        if settings.showMousePos:
+            mx, my = self.getMousePos()
+            self.draw_line(mx, 0, mx, NATIVE_HEIGHT - 1, 12)
+            self.draw_line(0, my, NATIVE_WIDTH - 1, my, 12)
+            self.draw_string(mx, my, f"{mx}, {my}", 12, 22)
         # Swap buffers
         display_surface.blit(back_buffer, (0, 0))
         self._scale_to_screen()
@@ -265,7 +270,7 @@ class Display:
         self.clear(0)
         self.update()
 
-    def getMousePos(self, debug=False):
+    def getMousePos(self):
         # Get mouse position in window coordinates
         mx, my = pg.mouse.get_pos()
         window_w, window_h = screen.get_size()
@@ -280,10 +285,6 @@ class Display:
             # Map mouse position to native display coordinates
             native_x = int((mx - offset_x) / scale_factor)
             native_y = int((my - offset_y) / scale_factor)
-            if debug:
-                self.draw_line(native_x, 0, native_x, NATIVE_HEIGHT - 1, 12)
-                self.draw_line(0, native_y, NATIVE_WIDTH - 1, native_y, 12)
-                self.draw_string(native_x, native_y, f"{native_x}, {native_y}", 12, 22)
             return (native_x, native_y)
         else:
             # Outside display area; return None or clamp to edge

@@ -81,13 +81,12 @@ def draw_list(items, selected, path=""):
     else:
         screen.draw_string(0, 180, "Click: Open, Back: Exit", -1, 23)
     #total current folder size
-    emote = '{line_top}{line_diag2}{line_bottom}{confused}{line_bottom}{line_diag1}{line_top}'
-    if 64000 - total_size > 0:
+    if 128000 - total_size > 0:
         too_big = False
     else:
         too_big = True
-    remaining_size = str(round(abs(64000 - total_size)/1024, 2)) + "kb"
-    screen.draw_string(0, 164, f"Folder: {(total_size)/1024:.2f}kb ({remaining_size if too_big else emote})", -1, 23)
+    remaining_size = str(round(abs(128000 - total_size)/1024, 2)) + "kb"
+    screen.draw_string(0, 168, f"Folder: {(total_size)/1024:.2f}kb ({"Too big!" if too_big else remaining_size})", -1, 23)
     screen.update()
 
 # Main program
