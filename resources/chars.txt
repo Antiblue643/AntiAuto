@@ -229,4 +229,8 @@ checkered 214
 checkered_reverse 214f
 hex_indicator 215
 bin_indicator 216
-space 217
+box_top 217
+box_bottom 218
+box_left 219
+box_right 219f
+space 220

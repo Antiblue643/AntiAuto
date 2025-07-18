@@ -26,6 +26,8 @@ class Parser:
             'left_click': "event.type == pg.MOUSEBUTTONDOWN and event.button == 1",
             'middle_click': "event.type == pg.MOUSEBUTTONDOWN and event.button == 2",
             'right_click': "event.type == pg.MOUSEBUTTONDOWN and event.button == 3",
+            'scroll_up': 'event.type == pg.MOUSEBUTTONDOWN and event.button == 4',
+            'scroll_down': 'event.type == pg.MOUSEBUTTONDOWN and event.button == 5',
             'obtain_keys_held()': 'pg.key.get_pressed()',
             'keycode_': 'pg.K_',
             #Attempt some vectormaster stuffs

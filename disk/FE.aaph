@@ -52,7 +52,7 @@ def draw_list(items, selected, path=""):
         path_y = 24
         list_start_y = 40
     screen.draw_string(0, title_y, "File Explorer", -1, 18)
-    screen.draw_string(0, title_y + 8, "Hoax OS - 0.0.6", -1, 18)
+    screen.draw_string(0, title_y + 8, "Hoax OS - 0.0.7", -1, 18)
     if path:
         screen.draw_string(0, path_y, "/" + path, -1, 23)
     else:
@@ -114,8 +114,6 @@ while running:
         if quit_event:
             running = False
         
-        if resize_event:
-            screen.handle_resize(event)
         if key_down_event:
             if key_h:
                 htoggle = not htoggle

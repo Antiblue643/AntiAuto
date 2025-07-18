@@ -16,12 +16,10 @@ def main():
         print("disk/notepadSave.aat not found")
     running = True
     while running:
-        screen.clear()
+        screen.clear(16)
         for get_events:
             if quit_event:
                 running = False
-            elif resize_event:
-                screen.handle_resize(event)
             elif key_down_event:
                 if special_key:
                     running = False
@@ -51,11 +49,11 @@ def main():
                     play_note("C1", 0x13, random.randint(220, 440), 31, 0.01)
         if "gaster" in text.lower():
             for i in range(5):
-                play_note("C1", 0x13, 880/(i + 1), 31, 0.05)
+                play_note("C1", 0x1b, 880/(i + 1), 7, 0.025)
                 time.sleep(0.05)
             raise SystemExit()
 
-        screen.draw_string(0, 0, text + "_", 0, 23)
+        screen.draw_string(4, 4, text + "_", -1, 0)
         screen.update()
 
 main()

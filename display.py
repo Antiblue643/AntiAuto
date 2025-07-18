@@ -2,7 +2,7 @@ from external import pg, Settings as s
 import re
 import random
 
-#The display is a 256x192 per-pixel display. It has 24 colors.
+# The display is a 256x192 per-pixel display. It has 24 colors.
 NATIVE_WIDTH = 256
 NATIVE_HEIGHT = 192
 
@@ -15,7 +15,6 @@ pg.display.set_icon(icon)
 settings = s()
 
 splash = pg.image.load("resources/splash.png")
-
 
 cl = settings.corruptLevel
 
@@ -69,8 +68,9 @@ class Display:
         pg.display.update()
 
     def loadFont(self):
-        #The font is an 128x128 monocolor bitmap image, with 8x8 characters.
+        # The font is an 128x128 monocolor bitmap image, with 8x8 characters.
         self.font = pg.image.load("resources/chars.png")  
+    
     def parseFont(self):
         # Every 8x8 tile is a character, meaning there are 256 characters
         for y in range(16):
@@ -96,13 +96,13 @@ class Display:
             quit("No colors file found!")
 
     def draw_pixel(self, x, y, color=23):
-            x = int(x)
-            y = int(y)
-            if settings.corruptDisplay:
-                #x = x + ((y + cl & 8 - color) - y)
-                color += (x & 8 ^ (y + random.randint(-cl, cl)) % 24)
-            if 0 <= color < len(self.colors) and 0 <= x < NATIVE_WIDTH and 0 <= y < NATIVE_HEIGHT:
-                back_buffer.set_at((x, y), self.color_cache.get(color, self.color_cache[color]))
+        x = int(x)
+        y = int(y)
+        if settings.corruptDisplay:
+            #x = x + ((y + cl & 8 - color) - y)
+            color += (x & 8 ^ (y + random.randint(-cl, cl)) % 24)
+        if 0 <= color < len(self.colors) and 0 <= x < NATIVE_WIDTH and 0 <= y < NATIVE_HEIGHT:
+            back_buffer.set_at((x, y), self.color_cache.get(color, (255, 0, 255)))
 
     def draw_line(self, x1, y1, x2, y2, color=23):
         x1 = int(x1)
@@ -158,7 +158,7 @@ class Display:
                     else:
                         self.draw_pixel(x + i, y + j, color1)
 
-    def draw_string(self, x, y, string, color1=0, color2=23):
+    def draw_string(self, x, y, string, default_bg=0, default_fg=23):
         x = int(x)
         y = int(y)
         current_x = x
@@ -167,48 +167,53 @@ class Display:
         char_height = 8
         max_x = NATIVE_WIDTH
 
-        # Split string into words, keeping spaces and emoji tokens
-        tokens = re.findall(r'\[.*?\]|\S+|\s', string)
+        current_bg = default_bg
+        current_fg = default_fg
 
-        for token in tokens:
-            if token == '\n':
-                current_x = x
-                current_y += char_height
+        # Regex to match markup tags like [9,13] or [e]
+        tag_regex = re.compile(r'\[(-?\d{1,2}),(-?\d{1,2})\]|\[e\]')
+        
+        pos = 0
+        while pos < len(string):
+            tag_match = tag_regex.match(string, pos)
+            if tag_match:
+                if tag_match.group(0) == '[e]':
+                    current_bg = default_bg
+                    current_fg = default_fg
+                else:
+                    current_bg = int(tag_match.group(1))
+                    current_fg = int(tag_match.group(2))
+                pos = tag_match.end()
                 continue
-            # Calculate token width in pixels
-            if token.startswith('{') and token.endswith('}') and token[1:-1] in self.char_map:
-                token_width = char_width
-            else:
-                token_width = len(token) * char_width
 
-            # Wrap if needed
-            if current_x + token_width > max_x and current_x != x:
+            char = string[pos]
+
+            if current_x + char_width > max_x:
                 current_x = x
                 current_y += char_height
 
-            # Draw token
-            i = 0
-            while i < len(token):
-                if token[i] == '{' and '}' in token[i+1:]:
-                    end = token.find('}', i+1)
-                    if end != -1:
-                        emoji_name = token[i+1:end]
-                        if emoji_name in self.char_map:
-                            self.draw_char(current_x, current_y, self.char_map[emoji_name], color1, color2)
-                            current_x += char_width
-                            i = end + 1
-                            continue
-                char = token[i]
-                if char in self.char_map:
-                    self.draw_char(current_x, current_y, self.char_map[char], color1, color2)
-                current_x += char_width
-                i += 1
+            # Emoji support
+            if char == '{':
+                end = string.find('}', pos)
+                if end != -1:
+                    emoji_name = string[pos+1:end]
+                    if emoji_name in self.char_map:
+                        self.draw_char(current_x, current_y, self.char_map[emoji_name], current_bg, current_fg)
+                        current_x += char_width
+                        pos = end + 1
+                        continue
+
+            if char in self.char_map:
+                self.draw_char(current_x, current_y, self.char_map[char], current_bg, current_fg)
+            current_x += char_width
+            pos += 1
+
 
     def clear(self, color=0):
         self.current_background = color
         back_buffer.fill(self.color_cache[color])
 
-    def update(self, clear=False): #include clear for convinence
+    def update(self, clear=False): #include clear for convenience
         if clear:
             self.clear(0)
         if settings.showFPS:
@@ -217,7 +222,7 @@ class Display:
             mx, my = self.getMousePos()
             self.draw_line(mx, 0, mx, NATIVE_HEIGHT - 1, 12)
             self.draw_line(0, my, NATIVE_WIDTH - 1, my, 12)
-            self.draw_string(mx, my, f"{mx}, {my}", 12, 22)
+            self.draw_string(mx, my, f"[12,22]{mx}, {my}[e]")
         # Swap buffers
         display_surface.blit(back_buffer, (0, 0))
         self._scale_to_screen()
@@ -260,8 +265,10 @@ class Display:
         screen.blit(self.scaled_surface, (pos_x, pos_y))
     
     def handle_resize(self, event):
-        self.screen = pg.display.set_mode((event.w, event.h), pg.RESIZABLE | pg.HWSURFACE | pg.DOUBLEBUF)
-        self.needs_rescale = True  # Force rescale on window resize
+        if self.screen is not None:
+            pg.display.set_mode((event.w, event.h), pg.RESIZABLE | pg.HWSURFACE | pg.DOUBLEBUF)
+            self.cached_size = (event.w, event.h)
+            self.needs_rescale = True  # Force rescale on window resize
 
     def shift(self, x, y):
         back_buffer.scroll(x, y)

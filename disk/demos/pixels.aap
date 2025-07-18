@@ -19,8 +19,6 @@ def main(): #Main function.
         for get_events: #the following code is needed for the program to work.
             if quit_event: #if the user quits the program.
                 running = False #stops the program.
-            elif resize_event: #if the user resizes the window.
-                screen.handle_resize(event) #resizes the screen to the new size.
             elif key_down_event: #checks for key presses.
                 if special_key: #if the user presses the special key.
                     running = False #stops the program.

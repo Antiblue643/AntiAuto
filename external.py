@@ -11,9 +11,7 @@ class Settings:
        
         self.showFPS = False #Always show FPS in the top left
         self.showMousePos = False #show the mouse position
-
-        self.perepherals = ["keyboard", "mouse"] #avaliable perepherals: keyboard, mouse, gamepad, microphone (only 2 at a time)
-        
+                
         self.showSplash = True #show splash screen on boot
         self.startupJingle = True #toggle the startup jingle on boot
         

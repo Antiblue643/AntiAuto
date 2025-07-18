@@ -6,6 +6,8 @@ screen.update(True)
 def main():
     running = True
     while running:
+        screen.draw_string(0, 0, "Nothing here yet.")
+        screen.update()
         for get_events:
             if quit_event:
                 running = False

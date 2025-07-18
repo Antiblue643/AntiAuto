@@ -21,8 +21,6 @@ def main():
         for get_events:
             if quit_event:
                 running = False
-            if resize_event:
-                screen.handle_resize(event)
             if key_down_event:
                 if special_key:
                     running = False

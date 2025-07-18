@@ -1,4 +1,5 @@
 import essentials
+import time
 
 PALETTE_COLS = 8
 PALETTE_ROWS = 3
@@ -9,7 +10,7 @@ TOOL_ERASER = 1
 TOOL_ELLIPSE = 2
 TOOLS = ["Pen", "Eraser", "Large"]
 
-# Canvas area (adjust as needed)
+# Canvas area
 CANVAS_X = 8
 CANVAS_Y = 48
 CANVAS_W = 192
@@ -29,7 +30,7 @@ def draw_palette(selected_color):
 def draw_tools(selected_tool):
     for i, name in enumerate(TOOLS):
         x = 120
-        y = 8 + i * 16
+        y = 8 + i * 8
         color = 23 if i == selected_tool else 7
         screen.draw_string(x, y - 4, name, 0, color)
 
@@ -57,7 +58,7 @@ def get_palette_at(mx, my):
 def get_tool_at(mx, my):
     for i in range(len(TOOLS)):
         x = 120
-        y = 8 + i * 16
+        y = i * 8
         if x <= mx < x + 48 and y <= my < y + 12:
             return i
     return None
@@ -102,8 +103,12 @@ def save_canvas():
         for count, value in encoded:
             f.write(f"{count}_{value} ")
         f.write("\n")
+        beep("G4", 0.1)
+        time.sleep(0.2)
+        beep("B4", 0.1)
+        time.sleep(0.2)
 
-def load_canvas():
+def load_canvas(initial=False):
     try:
         with open("disk/savedCanvas.aai", "r") as f:
             data = f.read().strip()
@@ -117,11 +122,22 @@ def load_canvas():
                     if index < len(flat_canvas):
                         canvas[y][x] = flat_canvas[index]
                     index += 1
+        if not initial:
+            beep("F4", 0.1)
+            time.sleep(0.2)
+            beep("F4", 0.1)
+            time.sleep(0.2)
         screen.clear()
     except:
-        pass
-
-load_canvas()
+        print("Invalid data")
+        play_note(
+            "C1",
+            0x12,
+            "C4",
+            31,
+            0.5
+        )
+load_canvas(True)
 screen.clear()
 screen.update()
 def main():
@@ -140,8 +156,6 @@ def main():
         for get_events:
             if quit_event:
                 running = False
-            elif resize_event:
-                screen.handle_resize(event)
             elif key_down_event:
                 if special_key:
                     running = False
