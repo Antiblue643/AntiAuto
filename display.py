@@ -20,6 +20,8 @@ cl = settings.corruptLevel
 
 pg.init()
 
+BASE25 = "0123456789ABCDEFGHIJKLMNO"
+
 class Display:
     def __init__(self):
         self.fonts = []
@@ -170,10 +172,11 @@ class Display:
         current_bg = default_bg
         current_fg = default_fg
 
-        # Regex to match markup tags like [9,13] or [e]
         tag_regex = re.compile(r'\[(-?\d{1,2}),(-?\d{1,2})\]|\[e\]')
-        
+        segments = []
         pos = 0
+
+        # Step 1: Tokenize into [ (text, bg, fg) ]
         while pos < len(string):
             tag_match = tag_regex.match(string, pos)
             if tag_match:
@@ -187,27 +190,79 @@ class Display:
                 continue
 
             char = string[pos]
+            if char == '\n':
+                segments.append(('\n', None, None))  # Special handling for newline
+                pos += 1
+                continue
 
-            if current_x + char_width > max_x:
-                current_x = x
-                current_y += char_height
-
-            # Emoji support
+            # Emoji
             if char == '{':
                 end = string.find('}', pos)
                 if end != -1:
                     emoji_name = string[pos+1:end]
                     if emoji_name in self.char_map:
-                        self.draw_char(current_x, current_y, self.char_map[emoji_name], current_bg, current_fg)
-                        current_x += char_width
+                        segments.append((f'{{{emoji_name}}}', current_bg, current_fg))
                         pos = end + 1
                         continue
 
-            if char in self.char_map:
-                self.draw_char(current_x, current_y, self.char_map[char], current_bg, current_fg)
-            current_x += char_width
+            segments.append((char, current_bg, current_fg))
             pos += 1
 
+        # Step 2: Draw with wrapping
+        current_x = x
+        current_y = y
+        for text, bg, fg in segments:
+            if text == '\n':
+                current_x = x
+                current_y += char_height
+                continue
+
+            # Handle emoji separately
+            if text.startswith('{') and text.endswith('}'):
+                emoji_name = text[1:-1]
+                if current_x + char_width > max_x:
+                    current_x = x
+                    current_y += char_height
+                self.draw_char(current_x, current_y, self.char_map[emoji_name], bg, fg)
+                current_x += char_width
+                continue
+
+            # Regular character
+            if current_x + char_width > max_x:
+                current_x = x
+                current_y += char_height
+            if text in self.char_map:
+                self.draw_char(current_x, current_y, self.char_map[text], bg, fg)
+            current_x += char_width
+
+
+    def rle_decode(self, rle):
+        flat = []
+        i = 0
+        while i + 1 < len(rle):
+            raw = BASE25.index(rle[i])
+            color = -1 if raw == 24 else raw
+            run = BASE25.index(rle[i + 1])
+            flat.extend([color] * run)
+            i += 2
+        return flat
+
+    def draw_aai(self, x, y, w=64, h=64, path="resources/no_icon.aai"):
+        cache = []
+        with open(path, "r") as f:
+            cache = f.read()
+        
+        # Decode RLE
+        flat = self.rle_decode(cache)
+        
+        # Fill the back_buffer with decoded pixel data
+        index = 0
+        for i in range(w * h):
+            color = flat[index]
+            if color != -1:
+                xi, yi = (i % w) + x, (i // w) + y
+                self.draw_pixel(xi, yi, color)
+            index += 1
 
     def clear(self, color=0):
         self.current_background = color

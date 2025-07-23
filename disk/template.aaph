@@ -5,6 +5,7 @@ screen.update(True)
 
 def main():
     running = True
+    screen.update(True)
     while running:
         for get_events:
             if quit_event:

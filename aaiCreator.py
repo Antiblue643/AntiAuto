@@ -39,7 +39,7 @@ def rle_encode(data):
         i += run
     return result
 
-def image_to_rle_sprite_function(image_path, func_name="sprite"):
+def image_to_rle_sprite_function(image_path, func_name="sprite", type="Function"):
     palette = load_palette()
     img = Image.open(image_path)
     base_width, base_height = img.size
@@ -85,16 +85,23 @@ def image_to_rle_sprite_function(image_path, func_name="sprite"):
     # Generate code
     header = f"def {func_name}(x, y"
     if is_animated:
+        if type == "Data":
+            print("Can't do animated aai images.")
+            quit()
         header += ", frame=0"
     header += "):\n"
 
-    body = "    data = "
+    if type != "Data":
+        body = "    data = "
+    else:
+        body = ""
     if is_animated:
         body += f"[{', '.join(frames)}]\n"
         body += "    sprite = data[frame % len(data)]\n"
     else:
-        body += frames[0] + "\n"
-        body += "    sprite = data\n"
+        body += frames[0].replace('"', "") + "\n"
+        if type != "Data":
+            body += "    sprite = data\n"
 
     decode_block = f"""    width = {base_width}
     height = {base_height}
@@ -113,8 +120,10 @@ def image_to_rle_sprite_function(image_path, func_name="sprite"):
             idx += 1
         i += 2
 """
-
-    return header + body + decode_block
+    if type == "Function":
+        return header + body + decode_block
+    else:
+        return body
 
 def main():
     root = tk.Tk()
@@ -127,16 +136,25 @@ def main():
         print("No file selected.")
         return
 
-    func_name = os.path.splitext(os.path.basename(file_path))[0]
-    try:
-        code = image_to_rle_sprite_function(file_path, func_name)
-    except Exception as e:
-        print(f"Error: {e}")
-        return
+    o = int(input("Data or function? [1/2]: "))
 
-    with open("spriteOutput.txt", "w") as f:
+    if o in [1, 2]:
+        func_name = os.path.splitext(os.path.basename(file_path))[0]
+        try:
+            code = image_to_rle_sprite_function(file_path, func_name, "Function" if o == 2 else "Data")
+        except Exception as e:
+            print(f"Error: {e}")
+            return
+    else:
+        print("Bad argument, try again.")
+        quit()
+
+    p = "aai" if o == 1 else "sprite"
+    q = ".aai" if o == 1 else ".txt"
+
+    with open(p + "Output" + q, "w") as f:
         f.write(code)
-    print("Sprite function written to spriteOutput.txt")
+    print(f"Sprite data/function written to {p + "Output" + q}")
 
 if __name__ == "__main__":
     main()

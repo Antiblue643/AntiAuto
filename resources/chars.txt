@@ -233,4 +233,5 @@ box_top 217
 box_bottom 218
 box_left 219
 box_right 219f
-space 220
+arrow_box 220
+space 221

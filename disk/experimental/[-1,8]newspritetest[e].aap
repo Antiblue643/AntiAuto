@@ -29,7 +29,8 @@ def main():
     while running:
         f += 1
         screen.clear((f // 64) % 24)
-        spamdance(80, 64, f // 4)
+        screen.draw_string(0, 0, "[-1,23]Also color name test[e]")
+        spamdance(96, 64, f // 4)
         screen.update()
         for get_events:
             if quit_event:

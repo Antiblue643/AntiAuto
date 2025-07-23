@@ -1,6 +1,7 @@
 import essentials
 import time
 
+# Constants
 PALETTE_COLS = 8
 PALETTE_ROWS = 3
 PALETTE_SIZE = 24
@@ -9,15 +10,50 @@ TOOL_PEN = 0
 TOOL_ERASER = 1
 TOOL_ELLIPSE = 2
 TOOLS = ["Pen", "Eraser", "Large"]
+BASE25 = "0123456789ABCDEFGHIJKLMNO"  # O = transparent (-1)
+
+# Canvas modes
+canvas_modes = {
+    "normal": {"w": 192, "h": 128},
+    "compact": {"w": 64, "h": 64}
+}
+active_mode = "normal"
 
 # Canvas area
 CANVAS_X = 8
 CANVAS_Y = 48
-CANVAS_W = 192
-CANVAS_H = 128
+CANVAS_W = canvas_modes[active_mode]["w"]
+CANVAS_H = canvas_modes[active_mode]["h"]
+canvas_buffers = {
+    "normal": [[0 for _ in range(192)] for _ in range(128)],
+    "compact": [[0 for _ in range(64)] for _ in range(64)]
+}
+canvas = canvas_buffers[active_mode]
 
-# Canvas data: 2D array of color indices
-canvas = [[0 for _ in range(CANVAS_W)] for _ in range(CANVAS_H)]
+def rle_encode(flat):
+    result = ""
+    i = 0
+    while i < len(flat):
+        color = flat[i]
+        run = 1
+        while run < 24 and i + run < len(flat) and flat[i + run] == color:
+            run += 1
+        char_color = BASE25[24] if color == -1 else BASE25[color]
+        char_run = BASE25[run]
+        result += char_color + char_run
+        i += run
+    return result
+
+def rle_decode(rle):
+    flat = []
+    i = 0
+    while i + 1 < len(rle):
+        raw = BASE25.index(rle[i])
+        color = -1 if raw == 24 else raw
+        run = BASE25.index(rle[i + 1])
+        flat.extend([color] * run)
+        i += 2
+    return flat
 
 def draw_palette(selected_color):
     for i in range(PALETTE_SIZE):
@@ -36,13 +72,11 @@ def draw_tools(selected_tool):
 
 def draw_buttons():
     screen.draw_string(200, 8, "{save}", 0, 23)
-    screen.draw_string(200, 24, "{folder}", 0, 23)
+    screen.draw_string(200, 20, "{folder}", 0, 23)
+    screen.draw_string(200, 30, "{arrow_box}", 0, 23)
 
 def draw_canvas():
-    # Draw a border around the canvas
-    border_color = 7
-    screen.draw_rect(CANVAS_X - 1, CANVAS_Y - 1, CANVAS_X + CANVAS_W + 1, CANVAS_Y + CANVAS_H + 1, border_color)
-    # Draw the actual canvas pixels
+    screen.draw_rect(CANVAS_X - 1, CANVAS_Y - 1, CANVAS_X + CANVAS_W + 1, CANVAS_Y + CANVAS_H + 1, 7)
     for y in range(CANVAS_H):
         for x in range(CANVAS_W):
             screen.draw_pixel(CANVAS_X + x, CANVAS_Y + y, canvas[y][x])
@@ -64,64 +98,42 @@ def get_tool_at(mx, my):
     return None
 
 def get_button_at(mx, my):
-    if 200 <= mx < 240 and 8 <= my < 20:
+    if 200 <= mx < 240 and 8 <= my < 16:
         return "save"
-    if 200 <= mx < 240 and 24 <= my < 36:
+    if 200 <= mx < 240 and 20 <= my < 28:
         return "load"
+    if 200 <= mx < 240 and 24 <= my < 40:
+        return "toggle"
     return None
 
 def in_canvas(mx, my):
-    return (CANVAS_X <= mx < CANVAS_X + CANVAS_W and
-            CANVAS_Y <= my < CANVAS_Y + CANVAS_H)
-
-def rle_encode(data):
-    encoded = []
-    count = 1
-    prev = data[0]
-    for pixel in data[1:]:
-        if pixel == prev:
-            count += 1
-        else:
-            encoded.append((count, prev))
-            count = 1
-            prev = pixel
-    encoded.append((count, prev))
-    return encoded
-
-def rle_decode(encoded):
-    decoded = []
-    for count, value in encoded:
-        decoded.extend([value] * count)
-    return decoded
+    return CANVAS_X <= mx < CANVAS_X + CANVAS_W and CANVAS_Y <= my < CANVAS_Y + CANVAS_H
 
 def save_canvas():
-    with open("disk/savedCanvas.aai", "w") as f:
-        # Convert canvas data to a single list of color indices
-        flat_canvas = [pixel for row in canvas for pixel in row]
-        encoded = rle_encode(flat_canvas)
-        # Write the RLE-encoded data to the file
-        for count, value in encoded:
-            f.write(f"{count}_{value} ")
-        f.write("\n")
-        beep("G4", 0.1)
-        time.sleep(0.2)
-        beep("B4", 0.1)
-        time.sleep(0.2)
+    flat = [pix for row in canvas for pix in row]
+    data = rle_encode(flat)
+    with open(f"disk/saved_{active_mode}.aai", "w") as f:
+        f.write(data)
+    beep("G4", 0.1)
+    time.sleep(0.2)
+    beep("B4", 0.1)
+    time.sleep(0.2)
 
 def load_canvas(initial=False):
+    global canvas
     try:
-        with open("disk/savedCanvas.aai", "r") as f:
-            data = f.read().strip()
-            parts = [part.split("_") for part in data.split()]
-            flat_encoded = [(int(count), int(value)) for count, value in parts]
-            flat_canvas = rle_decode(flat_encoded)
-            # Reconstruct the 2D canvas array from the flattened list
-            index = 0
-            for y in range(CANVAS_H):
-                for x in range(CANVAS_W):
-                    if index < len(flat_canvas):
-                        canvas[y][x] = flat_canvas[index]
-                    index += 1
+        with open(f"disk/saved_{active_mode}.aai", "r") as f:
+            rle = f.read().strip()
+            flat = rle_decode(rle)
+            w, h = CANVAS_W, CANVAS_H
+            canvas = [[0 for _ in range(w)] for _ in range(h)]
+            i = 0
+            for y in range(h):
+                for x in range(w):
+                    if i < len(flat):
+                        canvas[y][x] = flat[i]
+                    i += 1
+        canvas_buffers[active_mode] = canvas
         if not initial:
             beep("F4", 0.1)
             time.sleep(0.2)
@@ -129,23 +141,29 @@ def load_canvas(initial=False):
             time.sleep(0.2)
         screen.clear()
     except:
-        print("Invalid data")
-        play_note(
-            "C1",
-            0x12,
-            "C4",
-            31,
-            0.5
-        )
+        print("Load failed")
+        play_note("C1", 0x12, "C4", 31, 0.5)
+
+def toggle_canvas():
+    global active_mode, canvas, CANVAS_W, CANVAS_H
+    active_mode = "compact" if active_mode == "normal" else "normal"
+    CANVAS_W = canvas_modes[active_mode]["w"]
+    CANVAS_H = canvas_modes[active_mode]["h"]
+    canvas = canvas_buffers[active_mode]
+    screen.clear()
+
+# Load default canvas
 load_canvas(True)
 screen.clear()
 screen.update()
+
 def main():
     running = True
     color = 23
     tool = TOOL_PEN
     prev_x = None
     prev_y = None
+
     while running:
         mouse_x, mouse_y = screen.getMousePos()
         screen.update()
@@ -153,30 +171,32 @@ def main():
         draw_tools(tool)
         draw_buttons()
         draw_canvas()
+
         for get_events:
             if quit_event:
                 running = False
             elif key_down_event:
-                if special_key:
-                    running = False
-                if key_c:
+                if key_i:
+                    toggle_canvas()
+                    continue
+                elif key_c:
                     for y in range(CANVAS_H):
                         for x in range(CANVAS_W):
                             canvas[y][x] = 0
                     screen.clear()
                     screen.update()
+                elif special_key:
+                    running = False
+
             elif mouse_held_0:
-                # Palette selection
                 sel = get_palette_at(mouse_x, mouse_y)
                 if sel is not None:
                     color = sel
                     continue
-                # Tool selection
                 tsel = get_tool_at(mouse_x, mouse_y)
                 if tsel is not None:
                     tool = tsel
                     continue
-                # Button selection
                 bsel = get_button_at(mouse_x, mouse_y)
                 if bsel == "save":
                     save_canvas()
@@ -184,7 +204,10 @@ def main():
                 elif bsel == "load":
                     load_canvas()
                     continue
-                # Drawing (only inside canvas)
+                elif bsel == "toggle":
+                    toggle_canvas()
+                    continue
+
                 if in_canvas(mouse_x, mouse_y):
                     cx = mouse_x - CANVAS_X
                     cy = mouse_y - CANVAS_Y
@@ -213,11 +236,10 @@ def main():
                                 if 0 <= ex < CANVAS_W and 0 <= ey < CANVAS_H:
                                     canvas[ey][ex] = 0
                     elif tool == TOOL_ELLIPSE:
-                        # Simple filled ellipse
                         rx, ry = 8, 8
                         for oy in range(-ry, ry + 1):
                             for ox in range(-rx, rx + 1):
-                                if (ox*ox)/(rx*rx) + (oy*oy)/(ry*ry) <= 1:
+                                if (ox * ox) / (rx * rx) + (oy * oy) / (ry * ry) <= 1:
                                     ex = cx + ox
                                     ey = cy + oy
                                     if 0 <= ex < CANVAS_W and 0 <= ey < CANVAS_H:

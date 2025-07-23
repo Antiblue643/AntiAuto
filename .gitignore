@@ -52,7 +52,9 @@ __pycache__/
 #antiauto generated files
 temp.py
 notepadSave.aat
-savedCanvas.aai
 chars_fixed.txt
+saved_compact.aai
+saved_normal.aai
+aaiOutput.aai
 spriteOutput.txt
 devCanvasTest.py

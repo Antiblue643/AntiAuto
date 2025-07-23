@@ -23,7 +23,9 @@ def bios():
     else:
         print("No temp.py to delete... Safe for now... 😝")
     if settings.showSplash:
-        screen.showSplash()
+        screen.clear()
+        screen.draw_aai(0, 0, 256, 192, "resources/splash.aai")
+        screen.update()
         time.sleep(1.5)
     if settings.startupJingle:
         for note in ["E3", "A3", "E4"]:
