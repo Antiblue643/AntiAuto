@@ -14,8 +14,6 @@ pg.display.set_caption("AAngine")
 pg.display.set_icon(icon)
 settings = s()
 
-splash = pg.image.load("resources/splash.png")
-
 cl = settings.corruptLevel
 
 pg.init()
@@ -65,10 +63,6 @@ class Display:
             char_map[" "] = char_map["space"]
         return char_map
 
-    def showSplash(self):
-        screen.blit(splash, (0, 0))
-        pg.display.update()
-
     def loadFont(self):
         # The font is an 128x128 monocolor bitmap image, with 8x8 characters.
         self.font = pg.image.load("resources/chars.png")  
@@ -85,7 +79,7 @@ class Display:
 
     def loadColors(self):
         try:
-            with open("resources/colors.hex", "r") as f:
+            with open("resources/colors.txt", "r") as f:
                 self.colors = f.read().split("\n")
                 # Pre-cache all colors
                 for i, hex_color in enumerate(self.colors):
@@ -176,6 +170,8 @@ class Display:
         segments = []
         pos = 0
 
+        string = str(string) #BLAHG
+
         # Step 1: Tokenize into [ (text, bg, fg) ]
         while pos < len(string):
             tag_match = tag_regex.match(string, pos)
@@ -247,22 +243,35 @@ class Display:
             i += 2
         return flat
 
-    def draw_aai(self, x, y, w=64, h=64, path="resources/no_icon.aai"):
-        cache = []
-        with open(path, "r") as f:
-            cache = f.read()
-        
-        # Decode RLE
-        flat = self.rle_decode(cache)
-        
-        # Fill the back_buffer with decoded pixel data
-        index = 0
-        for i in range(w * h):
-            color = flat[index]
-            if color != -1:
-                xi, yi = (i % w) + x, (i // w) + y
-                self.draw_pixel(xi, yi, color)
-            index += 1
+    def draw_aai(self, x, y, data="resources/logo.aai"):
+        try:
+            with open(data, "r") as f:
+                content = f.read().strip()
+                parts = content.split('_')
+                
+                # Validate file format
+                if len(parts) != 3 or parts[0] != "aai":
+                    raise ValueError("Invalid AAI file format")
+                
+                # Parse dimensions
+                dim = parts[1].split('x')
+                if len(dim) == 2:
+                    w = int(dim[0])
+                    h = int(dim[1])
+                
+                # Get the data
+                flat = self.rle_decode(parts[2])
+                
+                # Fill the back_buffer with decoded pixel data
+                index = 0
+                for i in range(w * h):
+                    color = flat[index]
+                    if color != -1:
+                        xi, yi = (i % w) + x, (i // w) + y
+                        self.draw_pixel(xi, yi, color)
+                    index += 1
+        except (FileNotFoundError, ValueError, IndexError) as e:
+            print(f"Error loading AAI file: {e}")
 
     def clear(self, color=0):
         self.current_background = color

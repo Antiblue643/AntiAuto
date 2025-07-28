@@ -381,7 +381,7 @@ def main():
         "first_turn": "* A strong aura emanates\nfrom the Watercooler.",
         "other_turn": "* The watercooler shows no mercy.",
         "check": "* You CHECKed the Watercooler...\n* The water was confirmed\nto be cool.",
-        "flirt": '* You asked the\nWatercooler, "water" they doing later.',
+        "flirt": '* You asked the\nWatercooler, "water"\nthey doing later.',
         "spare_fail": "* Kris tried to SPARE the Watercooler, but it can't\nbe spared.",
         "spare_success": "* Kris spared Watercooler!",
         "cryout": "* You cried out. They heard you.",
@@ -403,9 +403,7 @@ def main():
             if quit_event:
                 running = False
             if key_down_event:
-                if special_key:
-                    running = False
-                elif death_state == GAME_OVER:
+                if death_state == GAME_OVER:
                     if key_UP or key_DOWN:
                         menu_selection = (menu_selection + 1) % 3 
                         beep(1000, 0.05)

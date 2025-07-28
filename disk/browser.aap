@@ -38,9 +38,7 @@ def main():
             if quit_event:
                 running = False
             elif key_down_event:
-                if special_key:
-                    running = False
-                elif key_BACKSPACE:
+                if key_BACKSPACE:
                     url = url[:-1]
                 elif key_RETURN:
                     if not show_result:

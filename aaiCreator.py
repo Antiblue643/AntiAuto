@@ -6,7 +6,7 @@ import os
 # Base-25 character set (24 colors + 1 transparent)
 BASE25 = "0123456789ABCDEFGHIJKLMNO"  # 'O' is index 24, used for transparent
 
-def load_palette(path="resources/colors.hex"):
+def load_palette(path="resources/colors.txt"):
     palette = []
     with open(path, "r") as f:
         for line in f:
@@ -72,46 +72,42 @@ def image_to_rle_sprite_function(image_path, func_name="sprite", type="Function"
                 data.append(color_idx)
 
         encoded = rle_encode(data)
+        frames.append(encoded)
 
-        # Sanity check
-        if len(encoded) % 2 != 0:
-            raise ValueError(f"Frame {frame_index} RLE string has odd length.")
-        total_pixels = sum(BASE25.index(encoded[i+1]) for i in range(0, len(encoded), 2))
-        if total_pixels != base_width * base_height:
-            raise ValueError(f"Frame {frame_index} decoded to {total_pixels} pixels (expected {base_width * base_height})")
-
-        frames.append(f'"{encoded}"')
-
-    # Generate code
-    header = f"def {func_name}(x, y"
-    if is_animated:
-        if type == "Data":
-            print("Can't do animated aai images.")
-            quit()
-        header += ", frame=0"
-    header += "):\n"
-
-    if type != "Data":
+    # Generate output
+    if type == "Data":
+        # Use underscores to separate metadata and data
+        output = f"aai_{base_width}x{base_height}_{frames[0]}"
+        return output
+    else:
+        # Function format
+        header = f"def {func_name}(x, y"
+        if is_animated:
+            header += ", frame=0"
+        header += "):\n"
+        
         body = "    data = "
-    else:
-        body = ""
-    if is_animated:
-        body += f"[{', '.join(frames)}]\n"
-        body += "    sprite = data[frame % len(data)]\n"
-    else:
-        body += frames[0].replace('"', "") + "\n"
-        if type != "Data":
+        if is_animated:
+            body += f"[{', '.join(f'"{f}"' for f in frames)}]\n"
+            body += "    sprite = data[frame % len(data)]\n"
+        else:
+            body += f'"{frames[0]}"\n'
             body += "    sprite = data\n"
 
-    decode_block = f"""    width = {base_width}
+        decode_block = f"""    parts = sprite.split('_')
+    width = {base_width}
     height = {base_height}
     base25 = "0123456789ABCDEFGHIJKLMNO"
     idx = 0
     i = 0
-    while i + 1 < len(sprite):
-        raw_color = base25.index(sprite[i])
+    
+    # Get actual sprite data from parts if needed
+    sprite_data = parts[2] if '_' in sprite else sprite
+    
+    while i + 1 < len(sprite_data):
+        raw_color = base25.index(sprite_data[i])
         color = -1 if raw_color == 24 else raw_color
-        run = base25.index(sprite[i + 1])
+        run = base25.index(sprite_data[i + 1])
         for _ in range(run):
             row = idx // width
             col = idx % width
@@ -120,10 +116,7 @@ def image_to_rle_sprite_function(image_path, func_name="sprite", type="Function"
             idx += 1
         i += 2
 """
-    if type == "Function":
         return header + body + decode_block
-    else:
-        return body
 
 def main():
     root = tk.Tk()

@@ -19,12 +19,9 @@ reset_key_repeat()  # Initial reset
 def bios():
     if os.path.exists("temp.py"):
         os.remove("temp.py")
-        print("leftover temp.py deleted, didya crash? Syntax error? 🤔")
-    else:
-        print("No temp.py to delete... Safe for now... 😝")
     if settings.showSplash:
         screen.clear()
-        screen.draw_aai(0, 0, 256, 192, "resources/splash.aai")
+        screen.draw_aai(0, 0, "resources/splash.aai")
         screen.update()
         time.sleep(1.5)
     if settings.startupJingle:

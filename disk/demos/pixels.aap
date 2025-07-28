@@ -1,3 +1,5 @@
+# pixels.aap
+
 #AntiAuto programs use a Python-like language
 
 #Although it is most definitely not compatible with the Vectormaster syntax, some functions can be swapped for their Antiauto equivalents.
@@ -8,7 +10,7 @@ import essentials #neccessary unless you want to add modules manually for some r
 import random #Other modules are optional.
 
 screen.clear(0) #clear screen with color 0 (black)
-screen.draw_string(0, 0, "Pixels Demo!", -1, 7) #draws a string (background color -1 (transparent), foreground color 7 (blue)) at the top of the screen. You can also use screen.draw_string() instead.
+screen.draw_string(0, 0, "Pixels Demo!", -1, 7) #draws a string (background color -1 (transparent), foreground color 7 (blue)) at the top of the screen. You can also use [bg, fg]Text[e] too.
 
 
 def main(): #Main function.
@@ -19,8 +21,5 @@ def main(): #Main function.
         for get_events: #the following code is needed for the program to work.
             if quit_event: #if the user quits the program.
                 running = False #stops the program.
-            elif key_down_event: #checks for key presses.
-                if special_key: #if the user presses the special key.
-                    running = False #stops the program.
 
 main() #runs the program.

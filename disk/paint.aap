@@ -73,7 +73,7 @@ def draw_tools(selected_tool):
 def draw_buttons():
     screen.draw_string(200, 8, "{save}", 0, 23)
     screen.draw_string(200, 20, "{folder}", 0, 23)
-    screen.draw_string(200, 30, "{arrow_box}", 0, 23)
+    screen.draw_string(200, 30, "{cross_box}", 0, 23)
 
 def draw_canvas():
     screen.draw_rect(CANVAS_X - 1, CANVAS_Y - 1, CANVAS_X + CANVAS_W + 1, CANVAS_Y + CANVAS_H + 1, 7)
@@ -110,29 +110,55 @@ def in_canvas(mx, my):
     return CANVAS_X <= mx < CANVAS_X + CANVAS_W and CANVAS_Y <= my < CANVAS_Y + CANVAS_H
 
 def save_canvas():
+    # Convert canvas to flat array
     flat = [pix for row in canvas for pix in row]
+    # Encode the data
     data = rle_encode(flat)
+    
+    # Save with metadata format using underscores
     with open(f"disk/saved_{active_mode}.aai", "w") as f:
-        f.write(data)
+        f.write(f"aai_{CANVAS_W}x{CANVAS_H}_{data}")
+    
+    # Success feedback
     beep("G4", 0.1)
     time.sleep(0.2)
     beep("B4", 0.1)
     time.sleep(0.2)
 
 def load_canvas(initial=False):
-    global canvas
+    global canvas, CANVAS_W, CANVAS_H
     try:
         with open(f"disk/saved_{active_mode}.aai", "r") as f:
-            rle = f.read().strip()
+            content = f.read().strip()
+            parts = content.split('_')
+            
+            # Validate file format
+            if len(parts) != 3 or parts[0] != "aai":
+                raise ValueError("Invalid AAI file format")
+            
+            # Parse dimensions
+            dim = parts[1].split('x')
+            if len(dim) == 2:
+                w = int(dim[0])
+                h = int(dim[1])
+                if w != CANVAS_W or h != CANVAS_H:
+                    print("Warning: Image dimensions don't match canvas size")
+            
+            # Get the data and decode
+            rle = parts[2]
             flat = rle_decode(rle)
-            w, h = CANVAS_W, CANVAS_H
-            canvas = [[0 for _ in range(w)] for _ in range(h)]
+            
+            # Initialize canvas
+            canvas = [[0 for _ in range(CANVAS_W)] for _ in range(CANVAS_H)]
+            
+            # Fill canvas with data
             i = 0
-            for y in range(h):
-                for x in range(w):
+            for y in range(CANVAS_H):
+                for x in range(CANVAS_W):
                     if i < len(flat):
                         canvas[y][x] = flat[i]
                     i += 1
+                    
         canvas_buffers[active_mode] = canvas
         if not initial:
             beep("F4", 0.1)
@@ -140,8 +166,8 @@ def load_canvas(initial=False):
             beep("F4", 0.1)
             time.sleep(0.2)
         screen.clear()
-    except:
-        print("Load failed")
+    except Exception as e:
+        print(f"Load failed: {e}")
         play_note("C1", 0x12, "C4", 31, 0.5)
 
 def toggle_canvas():
@@ -185,8 +211,6 @@ def main():
                             canvas[y][x] = 0
                     screen.clear()
                     screen.update()
-                elif special_key:
-                    running = False
 
             elif mouse_held_0:
                 sel = get_palette_at(mouse_x, mouse_y)

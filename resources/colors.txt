@@ -11,7 +11,7 @@
 6a9728 #10, medium green
 ff0000 #11, red
 f04444 #12, light red
-979797 #13, light gray
+979797 #13, medium gray
 e344f0 #14, pink
 ff00ff #15, magenta
 c5c5c5 #16, light gray

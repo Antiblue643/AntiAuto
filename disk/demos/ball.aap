@@ -115,8 +115,6 @@ def main():
             if quit_event:
                 running = False
             elif key_down_event:
-                if special_key:
-                    running = False
                 if key_SPACE:
                     balls.append(Ball())
                 if key_RETURN:

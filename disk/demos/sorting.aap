@@ -22,8 +22,6 @@ def main():
             if quit_event:
                 running = False
             if key_down_event:
-                if special_key:
-                    running = False
                 if key_SPACE:
                     random.shuffle(data)
                     sorting = True

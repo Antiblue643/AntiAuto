@@ -116,9 +116,7 @@ def main():
             if quit_event:
                 running = False
             elif key_down_event:
-                if special_key:
-                    running = False
-                elif key_UP:
+                if key_UP:
                     cursorpos = (cursorpos - 1) % len(params)
                     beep(880, 0.01)
                 elif key_DOWN:

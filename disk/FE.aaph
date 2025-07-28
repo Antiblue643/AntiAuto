@@ -6,7 +6,6 @@ import os
 import floppy
 import audio
 
-showhidden = False
 show_extensions = False
 
 def get_programs():
@@ -29,8 +28,6 @@ def get_programs():
             if os.path.isfile(item_path):
                 if item.endswith(".aap"):
                     dir_items.append(["file", item, relative_path, None, "aap"])
-                if showhidden and item.endswith(".aaph"):
-                    dir_items.append(["file", item, relative_path, None, "aaph"])
                 elif item.endswith(".aai"):
                     dir_items.append(["file", item, relative_path, None, "aai"])
                 elif item.endswith(".aat"):
@@ -39,27 +36,29 @@ def get_programs():
     return scan_directory()
 
 def draw_list(items, selected, path=""):
+    item_limit = 9
     screen.clear(9)
     # Draw Back button if not at root
     if len(nav_stack) > 1:
         screen.draw_rect(0, 0, 60, 20, 18)  # Button background
-        screen.draw_string(4, 4, "< Back", -1, 23)
+        screen.draw_string(4, 6, "< Back", -1, 23)
         title_y = 24
         path_y = 40
         list_start_y = 56
     else:
-        title_y = 8
+        title_y = 0
         path_y = 24
         list_start_y = 40
     screen.draw_string(0, title_y, "File Explorer", -1, 18)
-    screen.draw_string(0, title_y + 8, "Hoax OS - 0.0.7", -1, 18)
+    screen.draw_string(0, title_y + 8, "Hoax OS 0.0.9", -1, 18)
     if path:
-        screen.draw_string(0, path_y, "/" + path, -1, 23)
+        screen.draw_string(0, path_y, ("disk/" + path)[:32], 18, 9)
     else:
-        screen.draw_string(0, path_y, "Select a program:", -1, 23)
+        screen.draw_string(0, path_y, "disk/", 18, 9)
+    screen.draw_string(0, path_y + 8, "{bar_h}"*32, -1, 18)
     y = list_start_y
     total_size = 0
-    for i in range(len(items)):
+    for i in range(min(len(items), item_limit)):
         cursor = ">" if i == selected else " "
         if items[i][0] == "dir":
             prefix = "{folder} "
@@ -72,32 +71,49 @@ def draw_list(items, selected, path=""):
         else:
             prefix = "X"
         # Add new field to display file size
-        file_size = round((os.path.getsize(os.path.join("disk", path, items[i][1])))/1024, 2)
         total_size += os.path.getsize(os.path.join("disk", path, items[i][1]))
         if show_extensions:
-            screen.draw_string(0, y, cursor + prefix + items[i][1] + f" ({file_size}kb)", -1, 23)
+            screen.draw_string(0, y, cursor + prefix + items[i][1][:16], -1, 23)
         else:
             # Use rsplit() to split the file name on the last dot, keeping the leading parts
             file_name_without_ext = items[i][1].rsplit(".", 1)[0]
-            screen.draw_string(0, y, cursor + prefix + file_name_without_ext + f" ({file_size}kb)", -1, 23)
+            screen.draw_string(0, y, cursor + prefix + file_name_without_ext, -1, 23)
         y = y + 12
-    if path:
-        screen.draw_string(0, 180, "Click: Open, Back: Up", -1, 23)
-    else:
-        screen.draw_string(0, 180, "Click: Open, Back: Exit", -1, 23)
+
+    # File size / items remaining / logo UI      VVVVVVVV
+
+    screen.draw_rect(0, 168, 256, 192, 18)
+    screen.draw_string(0, 184, "{curve_tr}" + "{bar_h}"*30 + "{curve_tl}", -1, 9)
     #total current folder size
     if 128000 - total_size > 0:
         too_big = False
     else:
         too_big = True
     remaining_size = str(round(abs(128000 - total_size)/1024, 2)) + "kb"
-    screen.draw_string(0, 168, f"Folder: {(total_size)/1024:.2f}kb ({"Too big!" if too_big else remaining_size})", -1, 23)
+    
+    fullstring1 = f"{{bar_v}}Size: {(total_size)/1024:.2f}kb ({"Too big!" if too_big else remaining_size})"
+
+    screen.draw_string(0, 176, fullstring1, -1, 9)
+    
+    screen.draw_char(248, 176, (screen.char_map['bar_v'][0]), -1, 9)
+
+    numItems = len(items)
+
+    fullstring2 = "{bar_v}" + str(min(numItems, 9)) + "/" + str(item_limit) + " items {bar_v}"
+    screen.draw_string(256-(len(fullstring2) * 8)//2, 160, fullstring2, 18, 9 if numItems < 10 else 11)
+    
+    screen.draw_string(0, 168, "{curve_br}" + "{bar_h}"*19 + "{bar_ht}" + "{bar_h}"*10 + "{bar_vl}", -1, 9)
+
+    screen.draw_string(256-(len(fullstring2) * 8)//2, 152, "{curve_br}" + "{bar_h}" * (len(fullstring2) // 2 - 2) + "{curve_bl}", 18, 9)
+
+    screen.draw_aai(216, 1, 'resources/logo.aai')
+
     screen.update()
 
 # Main program
 programs = get_programs()
 if not programs:
-    screen.draw_string(0, 8, "No .aap programs found in disk/... WHY?", -1, 23)
+    screen.draw_string(0, 8, "No .aap programs found in disk/... HOW???", -1, 23)
     screen.update()
 
 nav_stack = [[programs, 0]]
@@ -120,16 +136,10 @@ while running:
             running = False
         
         if key_down_event:
-            if key_h:
-                showhidden = not showhidden
-                beep("A#4", 0.05)
-                programs = get_programs()  # Refresh list with new toggle state
             if key_e:
                 show_extensions = not show_extensions
                 beep("A#4", 0.05)
                 programs = get_programs()  # Refresh list with new toggle state
-            elif special_key:
-                raise SystemExit()
             elif key_ESCAPE:
                 raise SystemExit()
 

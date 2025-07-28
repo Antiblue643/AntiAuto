@@ -61,9 +61,7 @@ def main():
             if quit_event:
                 running = False
             elif key_down_event:
-                if special_key:
-                    running = False
-                elif key_SPACE:
+                if key_SPACE:
                     init_points()  # Reset points when space is pressed
 
 main()

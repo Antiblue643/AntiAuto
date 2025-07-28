@@ -21,9 +21,7 @@ def main():
             if quit_event:
                 running = False
             elif key_down_event:
-                if special_key:
-                    running = False
-                elif key_BACKSPACE:
+                if key_BACKSPACE:
                     text = text[:-1]
                 elif key_s and init_mods & keymod_CTRL:
                     with open("disk/notepadSave.aat", "w") as file:
