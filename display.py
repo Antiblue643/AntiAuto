@@ -20,6 +20,9 @@ pg.init()
 
 BASE25 = "0123456789ABCDEFGHIJKLMNO"
 
+pg.mouse.set_visible(False)
+cursorimg = pg.image.load('resources/cursor.png')
+
 class Display:
     def __init__(self):
         self.fonts = []
@@ -287,12 +290,14 @@ class Display:
             self.draw_line(mx, 0, mx, NATIVE_HEIGHT - 1, 12)
             self.draw_line(0, my, NATIVE_WIDTH - 1, my, 12)
             self.draw_string(mx, my, f"[12,22]{mx}, {my}[e]")
+        # Draw the custom cursor onto the back_buffer
+        cursor_pos = self.getMousePos()
+        back_buffer.blit(cursorimg, cursor_pos)
         # Swap buffers
         display_surface.blit(back_buffer, (0, 0))
         self._scale_to_screen()
         pg.display.update()
         self.clock.tick(settings.fps)
-        # Remove automatic clearing of back buffer
         # The clear() method should be called explicitly when needed
 
     def _scale_to_screen(self):

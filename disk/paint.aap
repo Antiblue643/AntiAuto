@@ -192,11 +192,12 @@ def main():
 
     while running:
         mouse_x, mouse_y = screen.getMousePos()
-        screen.update()
+        screen.clear()
         draw_palette(color)
         draw_tools(tool)
         draw_buttons()
         draw_canvas()
+        screen.update()
 
         for get_events:
             if quit_event:
