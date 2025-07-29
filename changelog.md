@@ -33,7 +33,7 @@ Updated characters (and fixed some flipped ones in the process), shrunk gitignor
 
 <details><summary>0.0.8α</summary>
 Added the ability to draw images with the draw_aai() function (it needs x, y, width, height, and file path.) Renamed the sprite creator to aaiCreator.py and added the ability to get the raw RLE data (normal aai data), updated the draw_string() function, added a 64x64 mode to the paint app, hid the file extensions in the file explorer (can be shown by pressing E), and updated/changed some experiments.
-#### 0.0.8α Info!
+<h4>0.0.8α Info!</h4>
 Since the new method of drawing aai images need a path, it is reccomended that you have your program in a folder, with a script and your images in it, so that the images don't fill up disk/
 </details>
 
