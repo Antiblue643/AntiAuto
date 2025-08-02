@@ -10,11 +10,9 @@ icon = pg.image.load("resources/icon.png")
 screen = pg.display.set_mode((NATIVE_WIDTH, NATIVE_HEIGHT), pg.RESIZABLE | pg.HWSURFACE | pg.DOUBLEBUF)
 display_surface = pg.Surface((NATIVE_WIDTH, NATIVE_HEIGHT)).convert()
 back_buffer = pg.Surface((NATIVE_WIDTH, NATIVE_HEIGHT)).convert()  # Add hardware acceleration
-pg.display.set_caption("AAngine")
+pg.display.set_caption("AntiAuto")
 pg.display.set_icon(icon)
 settings = s()
-
-cl = settings.corruptLevel
 
 pg.init()
 
@@ -95,47 +93,24 @@ class Display:
             quit("No colors file found!")
 
     def draw_pixel(self, x, y, color=23):
-        x = int(x)
-        y = int(y)
-        if settings.corruptDisplay:
-            #x = x + ((y + cl & 8 - color) - y)
-            color += (x & 8 ^ (y + random.randint(-cl, cl)) % 24)
         if 0 <= color < len(self.colors) and 0 <= x < NATIVE_WIDTH and 0 <= y < NATIVE_HEIGHT:
-            back_buffer.set_at((x, y), self.color_cache.get(color, (255, 0, 255)))
+            back_buffer.set_at((int(x), int(y)), self.color_cache.get(color, (255, 0, 255)))
 
     def draw_line(self, x1, y1, x2, y2, color=23):
-        x1 = int(x1)
-        x2 = int(x2)
-        y1 = int(y1)
-        y2 = int(y2)
-        pg.draw.line(back_buffer, self.color_cache[color], (x1, y1), (x2, y2))
+        pg.draw.line(back_buffer, self.color_cache[color], (int(x1), int(y1)), (int(x2), int(y2)))
 
     def draw_rect(self, x1, y1, x2, y2, color=23, outlineColor=None):
-        x1 = int(x1)
-        x2 = int(x2)
-        y1 = int(y1)
-        y2 = int(y2)
         # Draw filled rectangle
-        pg.draw.rect(back_buffer, self.color_cache[color], (x1, y1, x2 - x1, y2 - y1))
+        pg.draw.rect(back_buffer, self.color_cache[color], (int(x1), int(y1), int(x2) - int(x1), int(y2) - int(y1)))
         # Draw outline if outlineColor is not None
         if outlineColor is not None:
-            pg.draw.rect(back_buffer, self.color_cache[outlineColor], (x1, y1, x2 - x1, y2 - y1), 1)
+            pg.draw.rect(back_buffer, self.color_cache[outlineColor], (int(x1), int(y1), int(x2) - int(x1), int(y2) - int(y1)), 1)
     
     def draw_ellipse(self, x, y, radiusX, radiusY, color=23):
-        x = int(x)
-        y = int(y)
-        radiusX = int(radiusX)
-        radiusY = int(radiusY)
-        pg.draw.ellipse(back_buffer, self.color_cache[color], (x - radiusX, y - radiusY, radiusX * 2, radiusY * 2))
+        pg.draw.ellipse(back_buffer, self.color_cache[color], (int(x) - int(radiusX), int(y) - int(radiusY), int(radiusX) * 2, int(radiusY) * 2))
 
     def draw_triangle(self, x1, y1, x2, y2, x3, y3, color=23):
-        x1 = int(x1)
-        x2 = int(x2)
-        y1 = int(y1)
-        y2 = int(y2)
-        x3 = int(x3)
-        y3 = int(y3)
-        pg.draw.polygon(back_buffer, self.color_cache[color], [(x1, y1), (x2, y2), (x3, y3)])
+        pg.draw.polygon(back_buffer, self.color_cache[color], [(int(x1), int(y1)), (int(x2), int(y2)), (int(x3), int(y3))])
 
     def draw_char(self, x, y, char, color1=-1, color2=23):
         flip = False

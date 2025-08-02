@@ -38,9 +38,15 @@ Since the new method of drawing aai images need a path, it is reccomended that y
 </details>
 
 <details><summary>0.0.9α</summary>
-Updated the file explorer UI, limited the amount of items in a folder to 9, removed the need to include the special key (it now gets added during the parsing process), removed the expansions, removed an experiment, renamed colors.hex to colors.txt, updated the .aai format ("aai_WxH_DATADATADATA..."), updated the character map, and tweaked some demos. Close to 1.0!
+Updated the file explorer UI, limited the amount of items in a folder to 9, removed the need to include the special key (it now gets added during the parsing process), removed an experiment, renamed colors.hex to colors.txt, updated the .aai format ("aai_WxH_DATADATADATA..."), updated the character map, and tweaked some demos. Close to 1.0!
 </details>
 
 <details><summary>0.0.9β</summary>
-Added a cursor, prepared for .aam handling, made a changelog, removed most experiments.
+Added a cursor, made a changelog, removed most experiments.
+</details>
+
+<details><summary>0.0.9γ</summary>
+Removed corruption stuff, updated some demos, reverted .aam stuff (I have no idea how to handle it yet).
+
+Some app package stuff that has .aai, .aam, and .aap all in one file like an archive may possibly be coming soon.
 </details>

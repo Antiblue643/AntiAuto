@@ -1,5 +1,6 @@
 import essentials
 import time
+import copy
 
 # Constants
 PALETTE_COLS = 8
@@ -8,8 +9,8 @@ PALETTE_SIZE = 24
 PALETTE_CELL = 12
 TOOL_PEN = 0
 TOOL_ERASER = 1
-TOOL_ELLIPSE = 2
-TOOLS = ["Pen", "Eraser", "Large"]
+TOOL_FILL = 2
+TOOLS = ["Pen", "Eraser", "Fill"]
 BASE25 = "0123456789ABCDEFGHIJKLMNO"  # O = transparent (-1)
 
 # Canvas modes
@@ -183,6 +184,31 @@ load_canvas(True)
 screen.clear()
 screen.update()
 
+def flood_fill(x, y, target_color, replacement_color):
+    if target_color == replacement_color or not (0 <= x < CANVAS_W and 0 <= y < CANVAS_H):
+        return
+    stack = [(x, y)]
+    while stack:
+        cx, cy = stack.pop()
+        if 0 <= cx < CANVAS_W and 0 <= cy < CANVAS_H and canvas[cy][cx] == target_color:
+            canvas[cy][cx] = replacement_color
+            stack.extend([
+                (cx + 1, cy), (cx - 1, cy),
+                (cx, cy + 1), (cx, cy - 1)
+            ])
+
+undo_stack = []
+
+def push_undo():
+    undo_stack.append(copy.deepcopy(canvas))
+
+def undo():
+    global canvas
+    if undo_stack:
+        canvas[:] = undo_stack.pop()
+        screen.clear()
+        screen.update()
+
 def main():
     running = True
     color = 23
@@ -212,6 +238,9 @@ def main():
                             canvas[y][x] = 0
                     screen.clear()
                     screen.update()
+                elif key_z and init_mods & keymod_CTRL:  # Ctrl+Z for undo
+                    undo()
+                    continue
 
             elif mouse_held_0:
                 sel = get_palette_at(mouse_x, mouse_y)
@@ -234,6 +263,8 @@ def main():
                     continue
 
                 if in_canvas(mouse_x, mouse_y):
+                    # --- PUSH UNDO BEFORE CHANGING CANVAS ---
+                    push_undo()
                     cx = mouse_x - CANVAS_X
                     cy = mouse_y - CANVAS_Y
                     if tool == TOOL_PEN:
@@ -260,15 +291,10 @@ def main():
                                 ey = cy + oy
                                 if 0 <= ex < CANVAS_W and 0 <= ey < CANVAS_H:
                                     canvas[ey][ex] = 0
-                    elif tool == TOOL_ELLIPSE:
-                        rx, ry = 8, 8
-                        for oy in range(-ry, ry + 1):
-                            for ox in range(-rx, rx + 1):
-                                if (ox * ox) / (rx * rx) + (oy * oy) / (ry * ry) <= 1:
-                                    ex = cx + ox
-                                    ey = cy + oy
-                                    if 0 <= ex < CANVAS_W and 0 <= ey < CANVAS_H:
-                                        canvas[ey][ex] = color
+                    elif tool == TOOL_FILL:  # Now fill tool
+                        if 0 <= cx < CANVAS_W and 0 <= cy < CANVAS_H:
+                            target_color = canvas[cy][cx]
+                            flood_fill(cx, cy, target_color, color)
                     prev_x = mouse_x
                     prev_y = mouse_y
                 else:

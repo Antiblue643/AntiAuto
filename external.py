@@ -14,6 +14,5 @@ class Settings:
                 
         self.showSplash = True #show splash screen on boot
         self.startupJingle = True #toggle the startup jingle on boot
-        
-        self.corruptDisplay = False #mess with drawPixel to fuck with the screen (This affects nothing, and is entirely reversable)
-        self.corruptLevel = 1 #multiplier for level of corruption, affects some random values
+
+        self.version = "0.1.0"

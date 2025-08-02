@@ -99,4 +99,4 @@ I'm hoping to add more features to the AntiAuto, such as:
 - Possible rewrite in another language?
 
 ## Contributions
-I'd really appreciate feedback/suggestions, as well as tips/ways to fix my terrible code.
+I'd really appreciate feedback/suggestions, as well as tips/ways to fix my terrible code, or just some programs you've created to show off!

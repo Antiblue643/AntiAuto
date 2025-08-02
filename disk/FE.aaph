@@ -5,6 +5,9 @@ import essentials
 import os
 import floppy
 import audio
+from external import Settings as s
+
+settings = s()
 
 show_extensions = False
 
@@ -50,7 +53,7 @@ def draw_list(items, selected, path=""):
         path_y = 24
         list_start_y = 40
     screen.draw_string(0, title_y, "File Explorer", -1, 18)
-    screen.draw_string(0, title_y + 8, "Hoax OS 0.0.9", -1, 18)
+    screen.draw_string(0, title_y + 8, f"Hoax OS {settings.version}", -1, 18)
     if path:
         screen.draw_string(0, path_y, ("disk/" + path)[:32], 18, 9)
     else:

@@ -7,24 +7,63 @@ def get_flipped_variant(char_map, idx):
             return value  # (index, True)
     return None  # No flipped variant found
 
-def char_norm():
-    for x in range(16):
-            for y in range(16):
-                i = x + y * 16
 
-                flipped = get_flipped_variant(screen.char_map, i)
-                if flipped:
-                    # Draw the flipped version somewhere else
-                    screen.draw_char((x * 8) + 128, y * 8, flipped)
-                screen.draw_char(x * 8, y * 8, i)
+def get_char_name(char_map, idx):
+    for name, value in char_map.items():
+        if isinstance(value, tuple) and value[0] == idx and value[1] is False:
+            return name
+    return str(idx)
+
+
+def char_norm(mouse_pos=None):
+    hovered_idx = None
+    hovered_flipped = None
+    hovered_x = hovered_y = None
+    hovered_flip_x = hovered_flip_y = None
+    for x in range(16):
+        for y in range(16):
+            i = x + y * 16
+
+            flipped = get_flipped_variant(screen.char_map, i)
+            if flipped:
+                # Draw the flipped version somewhere else
+                screen.draw_char((x * 8) + 128, y * 8, flipped)
+                # Check if mouse is over the flipped character
+                if mouse_pos:
+                    mx, my = mouse_pos
+                    if (x * 8 + 128) <= mx < (x + 1) * 8 + 128 and y * 8 <= my < (y + 1) * 8:
+                        hovered_flipped = flipped
+                        hovered_flip_x, hovered_flip_y = x * 8 + 128, y * 8
+            screen.draw_char(x * 8, y * 8, i)
+            # Check if mouse is over this character
+            if mouse_pos:
+                mx, my = mouse_pos
+                if x * 8 <= mx < (x + 1) * 8 and y * 8 <= my < (y + 1) * 8:
+                    hovered_idx = i
+    # Show name/id if hovering
+    if hovered_idx is not None:
+        name = get_char_name(screen.char_map, hovered_idx)
+        screen.draw_string(0, 160, f"[18,9]{name}[e]")
+    if hovered_flipped is not None:
+        # Try to find the name for the flipped variant
+        for n, v in screen.char_map.items():
+            if v == hovered_flipped:
+                flip_name = n
+                break
+        else:
+            flip_name = str(hovered_flipped[0]) + "_flipped"
+        screen.draw_string(0, 168, f"[18,9]{flip_name}[e]")
+
 def main():
     running = True
     while running:
         screen.clear()
-        char_norm()
+        mouse_pos = screen.getMousePos()
+        char_norm(mouse_pos)
         screen.update()
         for get_events:
             if quit_event:
                 running = False
+
 
 main()
