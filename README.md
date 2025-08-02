@@ -71,7 +71,6 @@ Also, the pxo folder is for pixelorama (image editing)
 - **progdebug.py**: Parses programs without running them & deleting the temp.py
 - **charmap_updater.py**: Changes indices of the character map if something has been deleted (sometimes unreliable).
 - **audiotest.py**: Various tests for the audio system.
-- **aamCreator.py**: A upcoming converter tool that'll convert a furnace file to a .aam file.
 
 ## Dependencies
 
