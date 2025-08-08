@@ -1,6 +1,7 @@
 import essentials
 import time
 import copy
+import os
 
 # Constants
 PALETTE_COLS = 8
@@ -49,11 +50,15 @@ def rle_decode(rle):
     flat = []
     i = 0
     while i + 1 < len(rle):
-        raw = BASE25.index(rle[i])
-        color = -1 if raw == 24 else raw
-        run = BASE25.index(rle[i + 1])
-        flat.extend([color] * run)
-        i += 2
+        try:
+            raw = BASE25.index(rle[i])
+            color = -1 if raw == 24 else raw
+            run = BASE25.index(rle[i + 1])
+            flat.extend([color] * run)
+            i += 2
+        except ValueError:
+            # Skip invalid character and move on
+            i += 1
     return flat
 
 def draw_palette(selected_color):
@@ -122,12 +127,14 @@ def save_canvas():
     
     # Success feedback
     beep("G4", 0.1)
-    time.sleep(0.2)
+    audio.rest(0.2)
     beep("B4", 0.1)
-    time.sleep(0.2)
+    audio.rest(0.2)
 
 def load_canvas(initial=False):
     global canvas, CANVAS_W, CANVAS_H
+    if not os.path.exists(f"disk/saved_{active_mode}.aai"):
+        save_canvas()
     try:
         with open(f"disk/saved_{active_mode}.aai", "r") as f:
             content = f.read().strip()
@@ -135,7 +142,7 @@ def load_canvas(initial=False):
             
             # Validate file format
             if len(parts) != 3 or parts[0] != "aai":
-                raise ValueError("Invalid AAI file format")
+                raise ValueError(f"Invalid AAI file format. # of underscores detected: {len(parts)}, header (first part): {parts[0]}")
             
             # Parse dimensions
             dim = parts[1].split('x')
@@ -163,9 +170,9 @@ def load_canvas(initial=False):
         canvas_buffers[active_mode] = canvas
         if not initial:
             beep("F4", 0.1)
-            time.sleep(0.2)
+            audio.rest(0.2)
             beep("F4", 0.1)
-            time.sleep(0.2)
+            audio.rest(0.2)
         screen.clear()
     except Exception as e:
         print(f"Load failed: {e}")

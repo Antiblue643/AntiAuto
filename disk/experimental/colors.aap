@@ -1,0 +1,20 @@
+import essentials
+
+def draw_palette():
+    for i in range(24):
+        x = 8 + (i % 8) * 12
+        y = 8 + (i // 8) * 12
+        screen.draw_rect(x, y, x + 12, y + 12, i)
+
+def main():
+    running = True
+
+    while running:
+        screen.clear()
+        draw_palette()
+        screen.update()
+        for get_events:
+            if quit_event:
+                running = False
+
+main()

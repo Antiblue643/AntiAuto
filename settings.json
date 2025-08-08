@@ -1,0 +1,9 @@
+{
+    "showFPS": false,
+    "showMousePos": false,
+    "showSplash": true,
+    "startupJingle": true,
+    "version": "0.1.0_dev1",
+    "useBios": true,
+    "palette": "alpha"
+}

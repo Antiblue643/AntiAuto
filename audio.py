@@ -182,3 +182,7 @@ class Audio:
         for channel in self.channels:
             channel.stop()
         self.beeper_channel.stop()
+
+    def rest(self, seconds):
+        ms = int(seconds * 1000)
+        pg.time.delay(ms) #Still appears to pause rendering... idk

@@ -1,0 +1,96 @@
+import time
+import os
+
+delay = 0.5
+
+try:
+    import pygame as pg
+    print("Main module import successful.")
+except ImportError:
+    print("Pygame import failed, how did you get here?")
+
+try:
+    from display import Display as d
+    screen = d()
+    print("Screen module import successful.")
+except ImportError:
+    print("Screen module import failed, how did you get here?")
+
+text = "HOST OS BIOS"
+text += "\n{dither1}{dither2}{dither3}{dither2}{dither1}{dither2}{dither3}{dither2}{dither1}{dither2}{dither3}{dither2}{dither1}{dither2}{dither3}{dither2}{dither1}{dither2}{dither3}{dither2}{dither1}{dither2}{dither3}{dither2}{dither1}{dither2}{dither3}{dither2}{dither1}{dither2}{dither3}{dither2}"
+
+def update_screen():
+    screen.clear()
+    screen.draw_string(0, 0, text, -1, 23)
+    screen.update(False, False)
+
+def testimports():
+    global text
+    global delay
+    text += "\nTesting imports..."
+    update_screen()
+    time.sleep(delay)
+
+    parser = None
+    try:
+        from floppy import Parser as aap
+        parser = aap()
+        text += "\nFloppy module import successful."
+    except ImportError:
+        text += "\nFloppy module import failed."
+    update_screen()
+    time.sleep(delay)
+
+    try:
+        from audio import Audio as a
+        audio = a()
+        text += "\nAudio module import successful."
+    except ImportError:
+        text += "\nAudio module import failed."
+    update_screen()
+    time.sleep(delay)
+
+    return parser
+
+def testfilesystem():
+    global text
+    global delay
+    text += "\nTesting filesystem..."
+    update_screen()
+    if os.path.exists("disk/"):
+        text += "\nDisk directory exists."
+    else:
+        text += "\nDisk directory does not exist??"
+    update_screen()
+    time.sleep(delay)
+
+    all_subfolders = []
+    for root, dirs, files in os.walk("disk/"):
+        for dir in dirs:
+            all_subfolders.append(os.path.join(root, dir))
+    text += "\nSubfolders in disk directory:"
+    if all_subfolders:
+        for subfolder in all_subfolders:
+            text += f"\n- {subfolder}"
+    else:
+        text += "\nNo subfolders found in disk directory."
+    update_screen()
+    time.sleep(delay)
+
+def main():
+    running = True
+    parser = testimports()  # Get the parser instance
+    testfilesystem()
+    time.sleep(2)
+    if parser:
+        parser.parse_keys("FE.aaph")
+        parser.run()
+    while running:
+        screen.clear(9)
+        screen.draw_string(0, 0, text, -1, 18)
+        screen.update(False, False)
+        for get_events:
+            if quit_event:
+                running = False
+
+main()

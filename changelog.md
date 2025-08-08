@@ -28,7 +28,7 @@ Realized that -1 for the color index creates a transparent effect, added support
 Updated characters (and fixed some flipped ones in the process), shrunk gitignore, refactored some code and demos, added Webp support for the sprite creator, added experiments, and added file sizes to the file explorer.
 </details>
 
-<details><summary>0.0.7α</summary>Added what probably is the worst browser ever, support for brackets for color formatting in draw_string(): [bg, fg], [e] (This doesn't effect past functions using the color1/color2 arguments), removed the need to add the resize handler to scripts, tweaked the notepad a bit, added some support for Vectormaster (Although the coordinate systems will need to be translated), added RLE to the paint program and sprite creator, added another experiment, and added more characters.
+<details><summary>0.0.7α</summary>Added what probably is the worst browser ever, support for brackets for color formatting in draw_string(): <b>[bg, fg], [e] (This doesn't effect past functions using the color1/color2 arguments)</b>, removed the need to add the resize handler to scripts, tweaked the notepad a bit, added some support for Vectormaster (Although the coordinate systems will need to be translated), added RLE to the paint program and sprite creator, added another experiment, and added more characters.
 </details>
 
 <details><summary>0.0.8α</summary>
@@ -50,3 +50,11 @@ Removed corruption stuff, updated some demos, reverted .aam stuff (I have no ide
 
 Some app package stuff that has .aai, .aam, and .aap all in one file like an archive may possibly be coming soon.
 </details>
+
+<details><summary>0.1.0_dev1</summary>
+<h3> Welcome to the first 0.1.0 dev test! </h3>
+<h4>What's new:</h4>
+Added the ability to change the color palette to different Antiauto models (and changed things like the aai creator to handle that), added audio.rest(), made settings now a json file.
+<br>To get a setting, make an instance and use 
+<pre>settings_instance.settings.get("setting")</pre>to get a setting.
+<br>Also changed the cursor to an aai image, added a directory for games (comes with pong), and moved the deltarune battle thing into it, and added a BIOS.</br>

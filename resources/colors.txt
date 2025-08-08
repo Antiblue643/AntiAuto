@@ -1,4 +1,6 @@
-000000 #0, black  |  SORTED FROM DARK TO LIGHT
+# ALPHA COLORS
+
+000000 #0, black
 201d29 #1, navy
 161965 #2, dark blue
 3d2100 #3, brown
@@ -8,7 +10,7 @@
 0000ff #7, blue
 444bf0 #8, light blue
 1d9297 #9, dark cyan
-6a9728 #10, medium green
+6a9728 #10, medium green    
 ff0000 #11, red
 f04444 #12, light red
 979797 #13, medium gray
@@ -22,3 +24,19 @@ ffcf96 #19, tan
 c0ffee #21, light cyan
 ffff00 #22, yellow
 ffffff #23, white
+
+# INK COLORS
+
+1d1a18 #0, black
+615651 #1, dark gray
+c8b1a7 #2, light gray
+ffe3d6 #3, white
+
+# INK-C COLORS
+
+1d1a18 #0, black
+713b3b #1, red
+e09f84 #2, orange
+4a5f45 #3, green
+bfc3ff #4, blue
+ffe3d6 #5, white

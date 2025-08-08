@@ -25,14 +25,14 @@ if test == 1:
             print(f"Sample {sample:02d}")
             for note in notes:
                 audio.play_note(channel, sample, note, 31, 0.1)
-                time.sleep(0.25)
-            time.sleep(1)
+                audio.rest(0.25)
+            audio.rest(1)
         else:
             print(f"Skipped percussion (sample {sample}).")
 elif test == 2:
     for note in notes:
         audio.beep(note, 0.1)
-        time.sleep(0.25)
+        audio.rest(0.25)
 elif test == 3:
     chan1 = ["E2", 0, "E3", 0, "A3", 0, "A2", 0, "C4", 0, "E2", 0, "E3", 0, "A3"]
     chan2 = [0, "A2", 0, "C4", 0, "E2", 0, "E3", 0, "A3", 0, "A2", 0, "C4", 0, "E3"]
@@ -42,4 +42,4 @@ elif test == 3:
             audio.play_note("L", 0x18, n1, 31, 0.25)
         if n2:
             audio.play_note("R", 0x18, n2, 31, 0.25)
-        time.sleep(0.25)
+        audio.rest(0.25)

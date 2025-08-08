@@ -14,6 +14,7 @@ class Parser:
             'import main': 'import pygame as pg',
             'import screen': 'from display import Display as d\ndisplay = d()',
             'import floppy': 'from floppy import Parser as aap\nparser = aap()',
+            'import audio': 'from audio import Audio as a\naudio = a()\nbeep = audio.beep\nplay_note = audio.play_note',
             'import essentials': 'import pygame as pg\nfrom display import Display as d\nscreen = d()\nfrom audio import Audio as a\naudio = a()\nbeep = audio.beep\nplay_note = audio.play_note',
             'get_events': 'event in pg.event.get()',
             'quit_event': 'event.type == pg.QUIT',

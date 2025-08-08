@@ -3,7 +3,6 @@ import time
 import random
 import math
 
-
 class Bullet:
     def __init__(self, x, y, target_x, target_y, speed=1, color=23):
         self.x = x
@@ -753,6 +752,5 @@ def main():
                     guiding_soul_hit_timer[idx] -= 1
 
         screen.update()
-        #time.sleep(0.016)
 
 main()

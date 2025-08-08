@@ -110,7 +110,7 @@ def main():
         # Handle ball-ball collisions
         handle_collisions(balls)
 
-        time.sleep(0.016)
+        audio.rest(0.016)
         for get_events:
             if quit_event:
                 running = False

@@ -46,13 +46,12 @@ def render_stars(stars, maxZ, trail_speed=0.1):
             screen.draw_line(prev_x, prev_y, x, y, star[5])
 
 def main():
-    stars = init_stars(1024, 16)
+    stars = init_stars(1024, 32)
     running = True
     while running:
         screen.clear()
-        render_stars(stars, 16, 0.5)
+        render_stars(stars, 32, 0.15)
         screen.update()
-        time.sleep(0.06)
         
         for get_events:
             if quit_event:

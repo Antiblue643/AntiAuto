@@ -1,0 +1,80 @@
+import essentials
+import random
+
+def ball(x, y):
+    screen.draw_rect(x-4, y-4, x+4, y+4, 23)
+
+def beep():
+    audio.beep(random.randint(110, 220), 0.05)
+
+def main():
+    f = 0
+    ballx = 64
+    bally = 96
+    dirx = -1
+    diry = 1
+
+    scorep1 = 0
+    scorep2 = 0
+
+    p1y = 0
+    p2y = 96
+
+    running = True
+    while running:
+        f += 1
+        screen.clear()
+        
+        # Player 1 paddle control
+        p1y = screen.getMousePos()[1]
+        
+        # Random movement for Player 2 paddle
+        
+        delta = abs((bally - p2y) // 2)
+        error = random.randint(0, (delta + 1) * 2) + 1
+
+        if f % error == 0:
+            if bally > p2y:
+                p2y += random.randint(-1, 2 * delta)
+            if bally < p2y:
+                p2y += random.randint(-2 * delta, 1)
+        
+        if p2y < 8: p2y = 8
+        if p2y > 192: p2y = 192
+        
+        ball(ballx, bally)
+        screen.draw_rect(4, (p1y+80)-96, 8, (p1y+112)-96, 23)
+        screen.draw_rect(248, (p2y+80)-96, 252, (p2y+112)-96, 23)
+        screen.draw_string(0, 0, f"{scorep1}::{scorep2}", -1, 9)
+        screen.update()
+        
+        ballx += dirx
+        bally += diry
+        if ballx < 4:
+            ballx = 64
+            bally = 96
+            scorep2 += 1
+        if ballx > 254:
+            ballx = 64
+            bally = 96
+            scorep1 += 1
+        if bally > 192:
+            diry = -1
+            beep()
+        if bally < 1:
+            diry = 1
+            beep()
+        
+        if ballx <= 8 and bally >= (p1y+80)-96 and bally <= (p1y+112)-96:
+            dirx = 1
+            beep()
+
+        if ballx >= 248 and bally >= (p2y+80)-96 and bally <= (p2y+112)-96:
+            dirx = -1
+            beep()
+
+        for get_events:
+            if quit_event:
+                running = False
+
+main()

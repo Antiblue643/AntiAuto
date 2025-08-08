@@ -26,7 +26,7 @@ Also, the pxo folder is for pixelorama (image editing)
 - 24 colors
 - String and character with custom font
 - Screen clearing and updating
-- pixel, line, rect, ellipse, triangle, and aai image drawing.
+- Pixel, line, rect, ellipse, triangle, and aai image drawing.
 
 ### Audio System
 - 4 sound channels (L, C1, C2, R)
@@ -47,7 +47,6 @@ Also, the pxo folder is for pixelorama (image editing)
 ### System Programs
 - **Notepad**: A Notepad
 - **Paint**: A paint program
-- (TODO) **Music**: A music playback program
 - **Browser**: A very bad browser
 - **FE**: The (hidden) File explorer
 - **Template**: A (hidden) starting template for the main structure of programs (for more info read the comments in the pixels demo, or look at how floppy.py handles things 🤷‍♂️)

@@ -48,7 +48,7 @@ def main():
         if "gaster" in text.lower():
             for i in range(5):
                 play_note("C1", 0x1b, 880/(i + 1), 7, 0.025)
-                time.sleep(0.05)
+                audio.rest(0.05)
             raise SystemExit()
 
         screen.draw_string(4, 4, text + "_", -1, 0)

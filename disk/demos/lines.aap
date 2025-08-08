@@ -16,14 +16,25 @@ def init_points():
         y = random.randint(0, 192)
         dx = random.uniform(-1, 1)
         dy = random.uniform(-1, 1)
-        points.append([x, y, dx, dy])
+        points.append([x, y, dx, dy, 1.0])  # Added speed multiplier
 
 def update_points():
+    mx, my = screen.getMousePos()
     for point in points:
-        # Update position based on velocity
-        point[0] += point[2]
-        point[1] += point[3]
+        # Update position based on velocity and speed multiplier
+        point[0] += point[2] * point[4]
+        point[1] += point[3] * point[4]
         
+        # Drag points towards mouse position
+        dist = math.sqrt((mx - point[0])**2 + (my - point[1])**2)
+        if dist < 100:
+            point[2] += (mx - point[0]) / 200
+            point[3] += (my - point[1]) / 200
+
+        # Slow down points over time, cap at 0.006
+        point[4] *= 0.99
+        point[4] = max(point[4], 0.006)
+
         # Bounce off edges
         if point[0] < 0 or point[0] > 256:
             point[2] *= -1
@@ -51,7 +62,6 @@ def main():
     init_points()
     running = True
     while running:
-        time.sleep(0.01)
         screen.clear()
         update_points()
         render()

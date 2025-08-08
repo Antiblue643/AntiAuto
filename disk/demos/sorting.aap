@@ -5,7 +5,11 @@ import random
 import math
 import time
 
-data = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31] #32 elements
+# Initialize a list of numbers to sort
+data = []
+
+for _ in range(33):
+    data.append(random.randint(1, 32))  # 32 elements with random values
 
 random.shuffle(data)
 
@@ -33,12 +37,16 @@ def main():
             if j < len(data) - i - 1:
                 if data[j] > data[j + 1]:
                     data[j], data[j + 1] = data[j + 1], data[j]
+                    play_note("C1", 0x1A, 880 / data[j], 31, 0.05)
                 j += 1
             else:
                 j = 0
                 i += 1
                 if i >= len(data):
                     sorting = False
+                    for note in ["E4", "A4", "E5"]:
+                        play_note("C1", 0x1A, note, 31, 0.5)
+                        audio.rest(0.1)
         
         screen.clear()
         
@@ -52,14 +60,15 @@ def main():
         for k in range(len(data)):
             x = start_x + (k * bar_width)
             bar_height = int(data[k] * height_scale)
-            # Draw from bottom up
-            screen.draw_line(x, 192 - 8, x, 192 - 8 - bar_height, 20)
-            # Make bars thicker by drawing multiple lines
-            for offset in range(bar_width - 1):
-                screen.draw_line(x + offset, 192 - 8, x + offset, 192 - 8 - bar_height, 20)
-        
+            y_top = 192 - 8 - bar_height
+            y_bottom = 192 - 8
+            outline = 0
+            # Highlight bars being compared
+            if sorting and (k == j or k == j + 1):
+                outline = 12 if k == j else 17  # 12: red, 17: green
+            screen.draw_rect(x, y_top, x + bar_width, y_bottom, 20, outline)
         screen.draw_string(4, 4, "Bubble Sort - Space: Shuffle", 0, 23)
+        time.sleep(0.05 if sorting else 0) 
         screen.update()
-        time.sleep(0.1)
 
 main()

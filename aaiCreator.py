@@ -9,8 +9,11 @@ BASE25 = "0123456789ABCDEFGHIJKLMNO"  # 'O' is index 24, used for transparent
 def load_palette(path="resources/colors.txt"):
     palette = []
     with open(path, "r") as f:
-        for line in f:
-            line = line.strip().split()[0]
+        for i, line in enumerate(f):
+            if i > 24:
+                break
+            if line.strip() and not line.startswith("#"):
+                line = line.strip().split()[0]
             if len(line) == 6:
                 r = int(line[0:2], 16)
                 g = int(line[2:4], 16)

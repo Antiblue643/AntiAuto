@@ -27,6 +27,7 @@ def midi_to_note(midi):
     n = midi % 12
     o = midi // 12 - 1
     return notes[n] + str(o)
+
 def draw_waveform():
     # Only show for non-beeper channels
     if values[0] == 4:

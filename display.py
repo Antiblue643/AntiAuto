@@ -39,6 +39,7 @@ class Display:
         self.loadColors()
 
     def load_char_map(self):
+        """Load the character map from chars.txt"""
         char_map = {}
         try:
             with open('resources/chars.txt', "r", encoding="utf-8") as f:
@@ -65,10 +66,12 @@ class Display:
         return char_map
 
     def loadFont(self):
+        """Load the font file."""
         # The font is an 128x128 monocolor bitmap image, with 8x8 characters.
         self.font = pg.image.load("resources/chars.png")  
     
     def parseFont(self):
+        """Parse the font into 8x8 tiles."""
         # Every 8x8 tile is a character, meaning there are 256 characters
         for y in range(16):
             for x in range(16):
@@ -79,58 +82,123 @@ class Display:
                 self.fonts.append(char_surface)
 
     def loadColors(self):
+        """Load the colors, usually automatically called."""
         try:
+            palette_map = {
+                'alpha': '# ALPHA COLORS',
+                'ink': '# INK COLORS',
+                'ink-c': '# INK-C COLORS'
+            }
+            header = palette_map.get(settings.settings.get("palette"))
+            if not header:
+                quit("Unknown palette selected in settings!")
+
             with open("resources/colors.txt", "r") as f:
-                self.colors = f.read().split("\n")
-                # Pre-cache all colors
-                for i, hex_color in enumerate(self.colors):
-                    if hex_color:  # Skip empty lines
-                        r = int(hex_color[0:2], 16)
-                        g = int(hex_color[2:4], 16)
-                        b = int(hex_color[4:6], 16)
-                        self.color_cache[i] = (r, g, b)  # Store as RGB tuple
+                file_lines = f.readlines()
+
+            # Find header
+            start_idx = None
+            for i, line in enumerate(file_lines):
+                if line.strip().lower() == header.lower():
+                    start_idx = i + 1
+                    break
+            if start_idx is None:
+                quit(f"Could not find header {header} in colors.txt")
+
+            # Read until next header or end of file
+            section_colors = []
+            for line in file_lines[start_idx:]:
+                if line.strip().startswith('#'):
+                    break
+                if line.strip() and not line.startswith('#'):
+                    hex_color = line.split('#')[0].strip()
+                    section_colors.append(hex_color)
+
+            self.colors = section_colors
+
+            # Pre-cache all colors
+            for i, hex_color in enumerate(self.colors):
+                r = int(hex_color[0:2], 16)
+                g = int(hex_color[2:4], 16)
+                b = int(hex_color[4:6], 16)
+                self.color_cache[i] = (r, g, b)
+
         except FileNotFoundError:
             quit("No colors file found!")
 
+
+    def _normalize_color(self, color):
+        """Wrap real colors into palette range; keep -1 as transparent."""
+        if color >= 0:
+            return color % len(self.colors)
+        return color
+
+
     def draw_pixel(self, x, y, color=23):
-        if 0 <= color < len(self.colors) and 0 <= x < NATIVE_WIDTH and 0 <= y < NATIVE_HEIGHT:
+        color = self._normalize_color(color)
+        if color == -1:
+            return  # transparent
+        if 0 <= x < NATIVE_WIDTH and 0 <= y < NATIVE_HEIGHT:
             back_buffer.set_at((int(x), int(y)), self.color_cache.get(color, (255, 0, 255)))
 
+
     def draw_line(self, x1, y1, x2, y2, color=23):
+        color = self._normalize_color(color)
+        if color == -1:
+            return
         pg.draw.line(back_buffer, self.color_cache[color], (int(x1), int(y1)), (int(x2), int(y2)))
 
+
     def draw_rect(self, x1, y1, x2, y2, color=23, outlineColor=None):
-        # Draw filled rectangle
-        pg.draw.rect(back_buffer, self.color_cache[color], (int(x1), int(y1), int(x2) - int(x1), int(y2) - int(y1)))
-        # Draw outline if outlineColor is not None
+        color = self._normalize_color(color)
+        if color != -1:
+            pg.draw.rect(back_buffer, self.color_cache[color],
+                        (int(x1), int(y1), int(x2) - int(x1), int(y2) - int(y1)))
         if outlineColor is not None:
-            pg.draw.rect(back_buffer, self.color_cache[outlineColor], (int(x1), int(y1), int(x2) - int(x1), int(y2) - int(y1)), 1)
-    
+            outlineColor = self._normalize_color(outlineColor)
+            if outlineColor != -1:
+                pg.draw.rect(back_buffer, self.color_cache[outlineColor],
+                            (int(x1), int(y1), int(x2) - int(x1), int(y2) - int(y1)), 1)
+
+
     def draw_ellipse(self, x, y, radiusX, radiusY, color=23):
-        pg.draw.ellipse(back_buffer, self.color_cache[color], (int(x) - int(radiusX), int(y) - int(radiusY), int(radiusX) * 2, int(radiusY) * 2))
+        color = self._normalize_color(color)
+        if color == -1:
+            return
+        pg.draw.ellipse(back_buffer, self.color_cache[color],
+                        (int(x) - int(radiusX), int(y) - int(radiusY), int(radiusX) * 2, int(radiusY) * 2))
+
 
     def draw_triangle(self, x1, y1, x2, y2, x3, y3, color=23):
-        pg.draw.polygon(back_buffer, self.color_cache[color], [(int(x1), int(y1)), (int(x2), int(y2)), (int(x3), int(y3))])
+        color = self._normalize_color(color)
+        if color == -1:
+            return
+        pg.draw.polygon(back_buffer, self.color_cache[color],
+                        [(int(x1), int(y1)), (int(x2), int(y2)), (int(x3), int(y3))])
+
 
     def draw_char(self, x, y, char, color1=-1, color2=23):
+        color1 = self._normalize_color(color1)
+        color2 = self._normalize_color(color2)
         flip = False
         if isinstance(char, tuple):
             char_idx, flip = char
         else:
             char_idx = char
         if 0 <= char_idx < len(self.fonts):
-            # Make a copy so flipping doesn't affect the original
             font_surface = self.fonts[char_idx].copy()
             if flip:
                 font_surface = pg.transform.flip(font_surface, True, False)
             for i in range(8):
                 for j in range(8):
                     pixel_color = font_surface.get_at((i, j))
-                    # Check if the pixel is white (foreground) or black (background)
-                    if pixel_color[0] > 128:  # If the red component is bright, it's white
-                        self.draw_pixel(x + i, y + j, color2)
+                    if pixel_color[0] > 128:  # white (foreground)
+                        if color2 != -1:
+                            self.draw_pixel(x + i, y + j, color2)
                     else:
-                        self.draw_pixel(x + i, y + j, color1)
+                        if color1 != -1:
+                            self.draw_pixel(x + i, y + j, color1)
+
 
     def draw_string(self, x, y, string, default_bg=0, default_fg=23):
         x = int(x)
@@ -211,14 +279,19 @@ class Display:
 
 
     def rle_decode(self, rle):
+        """Decode a base-25 RLE string"""
         flat = []
         i = 0
         while i + 1 < len(rle):
-            raw = BASE25.index(rle[i])
-            color = -1 if raw == 24 else raw
-            run = BASE25.index(rle[i + 1])
-            flat.extend([color] * run)
-            i += 2
+            try:
+                raw = BASE25.index(rle[i])
+                color = -1 if raw == 24 else raw
+                run = BASE25.index(rle[i + 1])
+                flat.extend([color] * run)
+                i += 2
+            except ValueError:
+                # Skip invalid character and move on
+                i += 1
         return flat
 
     def draw_aai(self, x, y, data="resources/logo.aai"):
@@ -240,6 +313,14 @@ class Display:
                 # Get the data
                 flat = self.rle_decode(parts[2])
                 
+                # Crop if too large
+                max_pixels = w * h
+                if len(flat) > max_pixels:
+                    flat = flat[:max_pixels]
+                elif len(flat) < max_pixels:
+                    # Pad with transparent if too short
+                    flat.extend([-1] * (max_pixels - len(flat)))
+                
                 # Fill the back_buffer with decoded pixel data
                 index = 0
                 for i in range(w * h):
@@ -252,27 +333,29 @@ class Display:
             print(f"Error loading AAI file: {e}")
 
     def clear(self, color=0):
+        color = self._normalize_color(color)
         self.current_background = color
         back_buffer.fill(self.color_cache[color])
 
-    def update(self, clear=False): #include clear for convenience
+    def update(self, clear=False, drawCursor=True): #include clear for convenience
         if clear:
             self.clear(0)
-        if settings.showFPS:
+        if settings.settings.get("showFPS"):
             self.draw_string(0, 0, self.get_fps(), 0, 23)
-        if settings.showMousePos:
+        if settings.settings.get("showMousePos"):
             mx, my = self.getMousePos()
             self.draw_line(mx, 0, mx, NATIVE_HEIGHT - 1, 12)
             self.draw_line(0, my, NATIVE_WIDTH - 1, my, 12)
             self.draw_string(mx, my, f"[12,22]{mx}, {my}[e]")
         # Draw the custom cursor onto the back_buffer
-        cursor_pos = self.getMousePos()
-        back_buffer.blit(cursorimg, cursor_pos)
+        if drawCursor:
+            cursor_pos = self.getMousePos()
+            self.draw_aai(cursor_pos[0], cursor_pos[1], "resources/cursor.aai")
         # Swap buffers
         display_surface.blit(back_buffer, (0, 0))
         self._scale_to_screen()
         pg.display.update()
-        self.clock.tick(settings.fps)
+        self.clock.tick(60)
         # The clear() method should be called explicitly when needed
 
     def _scale_to_screen(self):
@@ -313,9 +396,6 @@ class Display:
             pg.display.set_mode((event.w, event.h), pg.RESIZABLE | pg.HWSURFACE | pg.DOUBLEBUF)
             self.cached_size = (event.w, event.h)
             self.needs_rescale = True  # Force rescale on window resize
-
-    def shift(self, x, y):
-        back_buffer.scroll(x, y)
     
     def panic(self):
         self.clear(0)
@@ -338,8 +418,7 @@ class Display:
             native_y = int((my - offset_y) / scale_factor)
             return (native_x, native_y)
         else:
-            # Outside display area; return None or clamp to edge
-            return (0, 0)
+            return (128, 96)
 
     def getMouseButtons(self):
         # Get the state of the mouse buttons
