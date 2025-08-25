@@ -58,3 +58,9 @@ Added the ability to change the color palette to different Antiauto models (and 
 <br>To get a setting, make an instance and use 
 <pre>settings_instance.settings.get("setting")</pre>to get a setting.
 <br>Also changed the cursor to an aai image, added a directory for games (comes with pong), and moved the deltarune battle thing into it, and added a BIOS.</br>
+</details>
+
+<details><summary>0.1.0_dev2</summary>
+<h3>Development test (versions with _devX at the end) will now not use the bios, play the startup jingle, and show the splash.</h3>
+<h4>What's new:</h4>
+Preparation for desktop, added ghosting/refreshing to supported models, updated aai format again (AAI_WxH_#F(newline)DATADATADATA(newline)DATADATADATA...), moved browser into experimental, changed the pxo folder to "pixelorama" and added the json color palette for image editing, updated template, added experiments, and updated pong.

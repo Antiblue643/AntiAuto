@@ -3,9 +3,9 @@
 The AntiAuto is a Fantasy computer. I made this with Python and Pygame. In the universe for my Snapverse 
 games, The AntiAuto is a desktop computer, and a successor to the Vectormaster.
 
-The disk has 2 folders: demos/ and experimental/
+The disk has 3 folders: demos/, experimental/, and games/
 
-Demos are like the VectorMaster, simple, mostly-working demos.
+Demos are like the VectorMaster, simple, mostly-working demos, and games are... games.
 The experimental folder however, is code I use for testing or messing around. That means it may include code that might work, might not work, or outright crash the emulator.
 
 Also, the pxo folder is for pixelorama (image editing)
@@ -83,9 +83,6 @@ Also, the pxo folder is for pixelorama (image editing)
 - Escape: Back/Exit
 - Ctrl+B: Force quit running program
 
-### Where's releases?
-In the new file, changelog.md!
-
 ## The future?
 I'm hoping to add more features to the AntiAuto, such as:
 - More demos
@@ -94,7 +91,7 @@ I'm hoping to add more features to the AntiAuto, such as:
 - Extra settings
 - Better GUI
 - Better OS
-- Possible rewrite in another language?
+- Possible rewrite in java?
 
 ## Contributions
 I'd really appreciate feedback/suggestions, as well as tips/ways to fix my terrible code, or just some programs you've created to show off!

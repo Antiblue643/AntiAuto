@@ -29,18 +29,18 @@ def main():
         p1y = screen.getMousePos()[1]
         
         # Random movement for Player 2 paddle
-        
-        delta = abs((bally - p2y) // 2)
-        error = random.randint(0, (delta + 1) * 2) + 1
+        if ballx > 192 and dirx == 1 :
+            delta = abs((bally - p2y) // 2)
+            error = random.randint(0, (delta + 1) * 2) + 1
 
-        if f % error == 0:
-            if bally > p2y:
-                p2y += random.randint(-1, 2 * delta)
-            if bally < p2y:
-                p2y += random.randint(-2 * delta, 1)
-        
-        if p2y < 8: p2y = 8
-        if p2y > 192: p2y = 192
+            if f % error == 0:
+                if bally > p2y:
+                    p2y += random.randint(-1, 2 * delta)
+                if bally < p2y:
+                    p2y += random.randint(-2 * delta, 1)
+            
+            if p2y < 8: p2y = 8
+            if p2y > 192: p2y = 192
         
         ball(ballx, bally)
         screen.draw_rect(4, (p1y+80)-96, 8, (p1y+112)-96, 23)

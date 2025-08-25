@@ -17,8 +17,13 @@ def splash():
     if settings.settings.get("showSplash"):
         screen.clear()
         screen.draw_aai(0, 0, "resources/splash.aai")
-        screen.update(False, False)
-        time.sleep(1.5)
+        if settings.settings.get("model") != "alpha":
+            screen.draw_string(0, 96, 'Warning, you have selected a model that is coded to refresh every 128 frames like e-ink. If you have epilepsy it is recommended to set "model" back to "alpha".', 0, 23)
+            screen.update(False, False)
+            time.sleep(8)
+        else:
+            screen.update(False, False)
+            time.sleep(1.5)
     if settings.settings.get("startupJingle"):
         for note in ["E3", "A3", "E4"]:
             audio.beep(note, 0.5)

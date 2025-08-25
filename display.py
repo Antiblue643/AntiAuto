@@ -2,7 +2,7 @@ from external import pg, Settings as s
 import re
 import random
 
-# The display is a 256x192 per-pixel display. It has 24 colors.
+# The display is a 256x192 per-pixel display.
 NATIVE_WIDTH = 256
 NATIVE_HEIGHT = 192
 
@@ -32,6 +32,7 @@ class Display:
         self.cached_size = (NATIVE_WIDTH, NATIVE_HEIGHT)
         self.scaled_surface = None
         self.needs_rescale = True
+        self.frame = 0
         
         # Load resources after initializing caches
         self.loadFont()
@@ -89,7 +90,7 @@ class Display:
                 'ink': '# INK COLORS',
                 'ink-c': '# INK-C COLORS'
             }
-            header = palette_map.get(settings.settings.get("palette"))
+            header = palette_map.get(settings.settings.get("model"))
             if not header:
                 quit("Unknown palette selected in settings!")
 
@@ -173,8 +174,7 @@ class Display:
         color = self._normalize_color(color)
         if color == -1:
             return
-        pg.draw.polygon(back_buffer, self.color_cache[color],
-                        [(int(x1), int(y1)), (int(x2), int(y2)), (int(x3), int(y3))])
+        pg.draw.polygon(back_buffer, self.color_cache[color], [(int(x1), int(y1)), (int(x2), int(y2)), (int(x3), int(y3))])
 
 
     def draw_char(self, x, y, char, color1=-1, color2=23):
@@ -294,41 +294,38 @@ class Display:
                 i += 1
         return flat
 
-    def draw_aai(self, x, y, data="resources/logo.aai"):
+    def draw_aai(self, x, y, path="resources/logo.aai", frame=0):
         try:
-            with open(data, "r") as f:
-                content = f.read().strip()
-                parts = content.split('_')
-                
-                # Validate file format
-                if len(parts) != 3 or parts[0] != "aai":
-                    raise ValueError("Invalid AAI file format")
-                
-                # Parse dimensions
-                dim = parts[1].split('x')
-                if len(dim) == 2:
-                    w = int(dim[0])
-                    h = int(dim[1])
-                
-                # Get the data
-                flat = self.rle_decode(parts[2])
-                
-                # Crop if too large
-                max_pixels = w * h
-                if len(flat) > max_pixels:
-                    flat = flat[:max_pixels]
-                elif len(flat) < max_pixels:
-                    # Pad with transparent if too short
-                    flat.extend([-1] * (max_pixels - len(flat)))
-                
-                # Fill the back_buffer with decoded pixel data
-                index = 0
-                for i in range(w * h):
-                    color = flat[index]
-                    if color != -1:
-                        xi, yi = (i % w) + x, (i // w) + y
-                        self.draw_pixel(xi, yi, color)
-                    index += 1
+            with open(path, "r") as f:
+                lines = f.read().strip().splitlines()
+
+            # New format: first line is aai_WxH_, rest are frames
+            if lines[0].startswith("aai_") and "x" in lines[0]:
+                dim = lines[0].split("_")[1].split("x")
+                w, h = int(dim[0]), int(dim[1])
+                frames = lines[1:]
+                #The #F in aai_WxH_#F is the frame count, purely for programmer use.
+
+                # If no extra lines, maybe it's old format in disguise
+                if not frames:
+                    raise ValueError(f"Possible old format in {path}.\nNew format: aai_WxH_#F\nDATADATADATA\nDATADATADATA\n...") #sorry for spam
+
+                chosen_frame = frames[frame % len(frames)]
+                flat = self.rle_decode(chosen_frame)
+
+            # Adjust length to match dimensions
+            max_pixels = w * h
+            if len(flat) > max_pixels:
+                flat = flat[:max_pixels]
+            elif len(flat) < max_pixels:
+                flat.extend([-1] * (max_pixels - len(flat)))
+
+            # Draw pixels
+            for i, color in enumerate(flat):
+                if color != -1:
+                    xi, yi = (i % w) + x, (i // w) + y
+                    self.draw_pixel(xi, yi, color)
+
         except (FileNotFoundError, ValueError, IndexError) as e:
             print(f"Error loading AAI file: {e}")
 
@@ -337,25 +334,51 @@ class Display:
         self.current_background = color
         back_buffer.fill(self.color_cache[color])
 
+    def ghost(self, transparency):
+        """
+        Ghost a frame of the screen by blending it with the previous frame.
+        Periodically clears ghosting to prevent burn-in effects.
+        """
+        # Clear ghosting every 128 frames to prevent burn-in
+        if self.frame % 128 == 1: #1 because if it's 0 it won't show the splash.
+            back_buffer.fill(self.color_cache[self.current_background])
+            return
+
+        # Ensure transparency is between 0 and 1
+        transparency = max(0.0, min(1.0, transparency))
+        
+        # Create a copy of the current back buffer
+        current_frame = back_buffer.copy()
+        
+        # Blend the current frame with the display surface (previous frame)
+        current_frame.set_alpha(int(transparency * 255))
+        back_buffer.blit(display_surface, (0, 0))  # Draw previous frame first
+        back_buffer.blit(current_frame, (0, 0))    # Blend current frame on top
+
     def update(self, clear=False, drawCursor=True): #include clear for convenience
         if clear:
             self.clear(0)
         if settings.settings.get("showFPS"):
-            self.draw_string(0, 0, self.get_fps(), 0, 23)
+            self.draw_string(0, 0, self.get_fps() + " " + str(self.frame), 0, 23)
         if settings.settings.get("showMousePos"):
             mx, my = self.getMousePos()
             self.draw_line(mx, 0, mx, NATIVE_HEIGHT - 1, 12)
             self.draw_line(0, my, NATIVE_WIDTH - 1, my, 12)
-            self.draw_string(mx, my, f"[12,22]{mx}, {my}[e]")
+            self.draw_string(mx + 8, my, f"[12,22]{mx}, {my}[e]")
         # Draw the custom cursor onto the back_buffer
         if drawCursor:
             cursor_pos = self.getMousePos()
             self.draw_aai(cursor_pos[0], cursor_pos[1], "resources/cursor.aai")
+        if settings.settings.get("model") != "alpha":
+            self.clock.tick(15) #suffer
+            self.ghost(0.7)
+        else:
+            self.clock.tick(60)
+        self.frame += 1
         # Swap buffers
         display_surface.blit(back_buffer, (0, 0))
         self._scale_to_screen()
         pg.display.update()
-        self.clock.tick(60)
         # The clear() method should be called explicitly when needed
 
     def _scale_to_screen(self):
