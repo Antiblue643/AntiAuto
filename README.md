@@ -12,6 +12,8 @@ Also, the pxo folder is for pixelorama (image editing)
 
 **Tested on Windows 11 and Manjaro Linux**
 
+Although, with Manjaro, the screen appears to flicker when starting it (not sure if its a VM issue), and there's an AVX2 warning.
+
 ## Features
 
 ### Engine Features
@@ -73,9 +75,10 @@ Also, the pxo folder is for pixelorama (image editing)
 
 ## Dependencies
 
-- Python 3.10+ (I'm using 3.13.1)
-- Pygame 2.5.0+ (I'm using 2.6.1)
-- Numpy 2.1.3+ (I'm using 2.1.3)
+- Python 3.10+ (I'm using 3.13.1) <-- Why? Duh.
+- Pygame 2.5.0+ (I'm using 2.6.1) <-- Why? Handling graphics.
+- Numpy 2.1.3+ (I'm using 2.1.3) <-- Why? Handling large math/array operations.
+- Pillow (For external tool) <-- Why? To manipulate images to convert to the aai format.
 
 ## Controls
 

@@ -63,4 +63,12 @@ Added the ability to change the color palette to different Antiauto models (and 
 <details><summary>0.1.0_dev2</summary>
 <h3>Development test (versions with _devX at the end) will now not use the bios, play the startup jingle, and show the splash.</h3>
 <h4>What's new:</h4>
-Preparation for desktop, added ghosting/refreshing to supported models, updated aai format again (AAI_WxH_#F(newline)DATADATADATA(newline)DATADATADATA...), moved browser into experimental, changed the pxo folder to "pixelorama" and added the json color palette for image editing, updated template, added experiments, and updated pong.
+Preparation for desktop, added ghosting/refreshing to supported models, updated aai format again (AAI_WxH_#F(newline)DATADATADATA(newline)DATADATADATA...), moved browser into experimental, changed the pxo folder to "pixelorama" and added the json color palette for image editing, updated template, added experiments, added a frame counter (screen.frame), and updated pong.
+</details>
+
+<details><summary>0.1.0_dev3</summary>
+<h4>What's new:</h4>
+<b>This will probably be the last "dev" version before 0.1.0. (unless I change my mind)</b>
+
+Added memory usage and aai cache display in the emulator settings, improved performance in drawing aai images, changed the "gateway" splash, refactored a little bit, removed the desktop stuff in favor of a settings app (the desktop stuff was a little useless, and wallpapers are now splashes), added user settings that goes with the settings app to change the color scheme and splash screen, added an emergency clear shortcut (ctrl + f4), and added a custom cursor system with draw_cursor().
+</details>

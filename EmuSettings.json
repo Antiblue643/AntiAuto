@@ -3,7 +3,9 @@
     "showMousePos": false,
     "showSplash": false,
     "startupJingle": false,
-    "version": "0.1.0_dev2",
+    "version": "0.1.0_dev3",
     "useBios": false,
-    "model": "alpha"
+    "model": "alpha",
+    "drawAAICache": false,
+    "drawMemUsage": false
 }

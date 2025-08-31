@@ -33,6 +33,11 @@ class Parser:
             'draw_dot': 'draw_pixel',
             'tone': 'play_note' #Volume & frequency will need to be swapped
         }
+        # Add special key combinations dictionary
+        self.special_keys = { #key, modifier
+            ('b', 'CTRL'): 'raise SystemExit',
+            ('F4', 'CTRL'): 'screen.clear()'
+        }
 
     def parse_keys(self, filename): #take all the lines, parse them, remove comments, and put them into a temporary file
         file_path = os.path.join(diskpath, filename)
@@ -70,11 +75,16 @@ class Parser:
             # If this is the event loop, insert special key logic right after
             if 'for event in pg.event.get()' in processed_line:
                 processed_lines.append(spaces + processed_line + '\n')
-                special = spaces + '    ' + (
-                    'if event.type == pg.KEYDOWN and event.key == pg.K_b and pg.key.get_mods() & pg.KMOD_CTRL:\n'
-                    + spaces + '        raise SystemExit\n'
-                )
-                processed_lines.append(special)
+                
+                # Generate special key handlers
+                for (key, modifier), action in self.special_keys.items():
+                    special = spaces + '    ' + (
+                        f'if event.type == pg.KEYDOWN and '
+                        f'event.key == pg.K_{key} and '
+                        f'pg.key.get_mods() & pg.KMOD_{modifier}:\n'
+                        f'{spaces}        {action}\n'
+                    )
+                    processed_lines.append(special)
             elif processed_line:
                 processed_lines.append(spaces + processed_line + '\n')
 

@@ -19,7 +19,6 @@ pg.init()
 BASE25 = "0123456789ABCDEFGHIJKLMNO"
 
 pg.mouse.set_visible(False)
-cursorimg = pg.image.load('resources/cursor.png')
 
 class Display:
     def __init__(self):
@@ -33,6 +32,7 @@ class Display:
         self.scaled_surface = None
         self.needs_rescale = True
         self.frame = 0
+        self.aai_cache = {}
         
         # Load resources after initializing caches
         self.loadFont()
@@ -178,6 +178,8 @@ class Display:
 
 
     def draw_char(self, x, y, char, color1=-1, color2=23):
+        x = int(x)
+        y = int(y)
         color1 = self._normalize_color(color1)
         color2 = self._normalize_color(color2)
         flip = False
@@ -294,41 +296,63 @@ class Display:
                 i += 1
         return flat
 
-    def draw_aai(self, x, y, path="resources/logo.aai", frame=0):
+    def draw_aai(self, x, y, path="resources/logo.aai", frame=0, crop=[0,0,0,0]):
+        surf = self.get_aai_surface(path, frame, crop)
+        if surf:
+            back_buffer.blit(surf, (x, y))
+
+    def get_aai_surface(self, path, frame=0, crop=[0,0,0,0]):
+        """Decode and cache an AAI image as a Surface."""
+        cache_key = (path, frame, tuple(crop))  # Make crop hashable for cache key
+        if cache_key in self.aai_cache:
+            return self.aai_cache[cache_key]
+
         try:
             with open(path, "r") as f:
                 lines = f.read().strip().splitlines()
-
-            # New format: first line is aai_WxH_, rest are frames
             if lines[0].startswith("aai_") and "x" in lines[0]:
                 dim = lines[0].split("_")[1].split("x")
                 w, h = int(dim[0]), int(dim[1])
                 frames = lines[1:]
-                #The #F in aai_WxH_#F is the frame count, purely for programmer use.
-
-                # If no extra lines, maybe it's old format in disguise
-                if not frames:
-                    raise ValueError(f"Possible old format in {path}.\nNew format: aai_WxH_#F\nDATADATADATA\nDATADATADATA\n...") #sorry for spam
-
                 chosen_frame = frames[frame % len(frames)]
                 flat = self.rle_decode(chosen_frame)
+                # Adjust length to match dimensions
+                max_pixels = w * h
+                if len(flat) > max_pixels:
+                    flat = flat[:max_pixels]
+                elif len(flat) < max_pixels:
+                    flat.extend([-1] * (max_pixels - len(flat)))
+                
+                # Create initial surface
+                surf = pg.Surface((w, h), flags=pg.SRCALPHA).convert_alpha()
+                for i, color in enumerate(flat):
+                    color = self._normalize_color(color)
+                    if color != -1:
+                        xi, yi = (i % w), (i // w)
+                        surf.set_at((xi, yi), self.color_cache.get(color, (255, 0, 255)))
+                
+                # Apply cropping if specified
+                if crop != [0,0,0,0]:
+                    x1, y1, x2, y2 = crop
+                    # Ensure coordinates are within bounds
+                    x1 = max(0, min(x1, w))
+                    y1 = max(0, min(y1, h))
+                    x2 = max(0, min(x2, w))
+                    y2 = max(0, min(y2, h))
+                    
+                    if x2 > x1 and y2 > y1:  # Only crop if valid rectangle
+                        crop_width = x2 - x1
+                        crop_height = y2 - y1
+                        cropped_surf = pg.Surface((crop_width, crop_height), flags=pg.SRCALPHA).convert_alpha()
+                        cropped_surf.blit(surf, (0, 0), (x1, y1, crop_width, crop_height))
+                        surf = cropped_surf
 
-            # Adjust length to match dimensions
-            max_pixels = w * h
-            if len(flat) > max_pixels:
-                flat = flat[:max_pixels]
-            elif len(flat) < max_pixels:
-                flat.extend([-1] * (max_pixels - len(flat)))
-
-            # Draw pixels
-            for i, color in enumerate(flat):
-                if color != -1:
-                    xi, yi = (i % w) + x, (i // w) + y
-                    self.draw_pixel(xi, yi, color)
-
-        except (FileNotFoundError, ValueError, IndexError) as e:
+                self.aai_cache[cache_key] = surf
+                return surf
+        except Exception as e:
             print(f"Error loading AAI file: {e}")
-
+        return None
+    
     def clear(self, color=0):
         color = self._normalize_color(color)
         self.current_background = color
@@ -355,31 +379,53 @@ class Display:
         back_buffer.blit(display_surface, (0, 0))  # Draw previous frame first
         back_buffer.blit(current_frame, (0, 0))    # Blend current frame on top
 
+    def draw_cursor(self, cursor, offsetX=0, offsetY=0):
+        """Display a custom cursor at the mouse position. Will need to have update() not have the drawCursor argument as True."""
+        x, y = self.getMousePos()
+        cursors = ['hand', 'pointer', 'hang', 'text', 'throbber', 'arrows_h', 'arrows_v']
+        if cursor in cursors:
+            if cursor == "throbber":
+                self.draw_aai(x + offsetX, y + offsetY, "resources/cursors/throbber.aai", (int(self.frame // 16)))
+            else:
+                self.draw_aai(x + offsetX, y + offsetY, f"resources/cursors/{cursor}.aai")
+        else:
+            self.draw_aai(x + offsetX, y + offsetY, "resources/cursors/pointer.aai")
+
     def update(self, clear=False, drawCursor=True): #include clear for convenience
         if clear:
             self.clear(0)
-        if settings.settings.get("showFPS"):
-            self.draw_string(0, 0, self.get_fps() + " " + str(self.frame), 0, 23)
-        if settings.settings.get("showMousePos"):
-            mx, my = self.getMousePos()
-            self.draw_line(mx, 0, mx, NATIVE_HEIGHT - 1, 12)
-            self.draw_line(0, my, NATIVE_WIDTH - 1, my, 12)
-            self.draw_string(mx + 8, my, f"[12,22]{mx}, {my}[e]")
-        # Draw the custom cursor onto the back_buffer
+        # Draw the default cursor
         if drawCursor:
-            cursor_pos = self.getMousePos()
-            self.draw_aai(cursor_pos[0], cursor_pos[1], "resources/cursor.aai")
+            cx, cy = self.getMousePos()
+            self.draw_aai(cx, cy, "resources/cursors/pointer.aai")
         if settings.settings.get("model") != "alpha":
             self.clock.tick(15) #suffer
-            self.ghost(0.7)
+            self.ghost(0.2)
         else:
             self.clock.tick(60)
+        self.debug()
         self.frame += 1
+        self.frame = self.frame % 2E16 #65536
         # Swap buffers
         display_surface.blit(back_buffer, (0, 0))
         self._scale_to_screen()
         pg.display.update()
         # The clear() method should be called explicitly when needed
+
+    def debug(self):
+        if settings.settings.get("showFPS"):
+            self.draw_string(0, 0, self.get_fps() + " " + str(self.frame), 1, -1)
+        if settings.settings.get("showMousePos"):
+            mx, my = self.getMousePos()
+            self.draw_line(mx, 0, mx, NATIVE_HEIGHT - 1, 12)
+            self.draw_line(0, my, NATIVE_WIDTH - 1, my, 12)
+            self.draw_string(mx + 8, my, f"[12,22]{mx}, {my}[e]")
+        if settings.settings.get("drawAAICache"):
+            self.draw_string(0, 96, self.aai_cache, 1, -1)
+        if settings.settings.get("drawMemUsage"):
+            import psutil
+            mem = psutil.virtual_memory()
+            self.draw_string(0, 112, f"Memory Usage: {mem.percent}%", 1, -1)
 
     def _scale_to_screen(self):
         # Get the window size

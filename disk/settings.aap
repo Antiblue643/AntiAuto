@@ -1,0 +1,105 @@
+import essentials
+
+settings_path = "disk/user_settings.aath"
+
+# Add default values
+DEFAULT_SETTINGS = [0, 18, 9, 23]
+
+def getsetting(setting):
+    with open(settings_path, 'tr') as f:
+        file = f.readlines()
+        s = int(file[setting].split("=")[1])
+    return s
+
+def setsetting(setting, value):
+    # Add bounds checking
+    if setting < 0 or setting >= len(DEFAULT_SETTINGS):
+        return
+    if value < 0 or value > limits[setting]:
+        return
+        
+    with open(settings_path, 'r') as f:
+        file = f.readlines()
+    file[setting] = f"{setting}={value}\n"
+    with open(settings_path, 'w') as f:
+        f.writelines(file)
+
+def reset_settings():
+    for i, value in enumerate(DEFAULT_SETTINGS):
+        setsetting(i, value)
+    refresh_settings()
+
+splash = getsetting(0)
+color1 = getsetting(1)
+color2 = getsetting(2)
+color3 = getsetting(3)
+
+limits = [3, 23, 23, 23] #4 wallpapers and 24 colors
+
+def get_setting_at_position(y):
+    if y < 48 or y > 96:  # Updated range to match new text positions
+        return -1
+    return (y - 48) // 12  # Updated starting position to match window()
+
+def window():
+    options = [
+        (f"Splash Screen: {splash}", 0),
+        (f"Primary Color: {color1}", 1),
+        (f"Secondary Color: {color2}", 2),
+        (f"Text Color: {color3}", 3)
+    ]
+    screen.draw_rect(16, 16, 240, 176, color2, color3)
+    screen.draw_string(20, 20, "Settings", -1, color1)
+    for i, (label, setting) in enumerate(options):
+        screen.draw_string(20, 48 + i * 12, label, -1, color3)
+    screen.draw_string(20, 32, "Hover and scroll to change", -1, color3)
+    
+    screen.draw_string(165, 160, "Reset", color1, color2)
+
+def is_over_reset_button(x, y):
+    return 160 <= x <= 240 and 160 <= y <= 176
+
+def refresh_settings():
+    global splash, color1, color2, color3
+    splash = getsetting(0)
+    color1 = getsetting(1)
+    color2 = getsetting(2)
+    color3 = getsetting(3)
+
+def main():
+    running = True
+    while running:
+        screen.clear(color1)
+        window()
+        mouse_x, mouse_y = screen.getMousePos()
+        if is_over_reset_button(mouse_x, mouse_y):
+            screen.draw_cursor("hand")
+        elif get_setting_at_position(mouse_y) != -1:
+            screen.draw_cursor("arrows_v", -4, -4)
+        else:
+            screen.draw_cursor("pointer")
+        screen.update(False, False)
+        for get_events:
+            if quit_event:
+                running = False
+            
+            setting_index = get_setting_at_position(mouse_y)
+            
+            if left_click:
+                if is_over_reset_button(mouse_x, mouse_y):
+                    reset_settings()
+                
+            if setting_index != -1:  # If mouse is over a setting
+                if scroll_up:
+                    current = getsetting(setting_index)
+                    new_value = min((current + 1), limits[setting_index])  # Use min to prevent overflow
+                    setsetting(setting_index, new_value)
+                    refresh_settings()
+                
+                if scroll_down:
+                    current = getsetting(setting_index)
+                    new_value = max((current - 1), 0)  # Use max to prevent underflow
+                    setsetting(setting_index, new_value)
+                    refresh_settings()
+
+main()

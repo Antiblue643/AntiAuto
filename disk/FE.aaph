@@ -4,12 +4,31 @@
 import essentials
 import os
 import floppy
-import audio
 from external import Settings as s
+import time
 
-settings = s()
+EmuSettings = s()
 
 show_extensions = False
+settings_path = "disk/user_settings.aath"
+
+def getsetting(setting):
+    with open(settings_path, 'r') as f:
+        file = f.readlines()
+        s = int(file[setting].split("=")[1])
+    return s
+
+splash = getsetting(0)
+color1 = getsetting(1)
+color2 = getsetting(2)
+color3 = getsetting(3)
+
+def refresh_settings():
+    global splash, color1, color2, color3
+    splash = getsetting(0)
+    color1 = getsetting(1)
+    color2 = getsetting(2)
+    color3 = getsetting(3)
 
 def get_programs():
     items = []
@@ -38,13 +57,13 @@ def get_programs():
         return sorted(dir_items)
     return scan_directory()
 
-def draw_list(items, selected, path=""):
+def draw_list(items, selected, path="", cursor_type="pointer"):
     item_limit = 9
-    screen.clear(9)
+    screen.clear(color2)
     # Draw Back button if not at root
     if len(nav_stack) > 1:
-        screen.draw_rect(0, 0, 60, 20, 18)  # Button background
-        screen.draw_string(4, 6, "< Back", -1, 23)
+        screen.draw_rect(0, 0, 60, 20, color1)  # Button background
+        screen.draw_string(4, 6, "< Back", color2, color3)
         title_y = 24
         path_y = 40
         list_start_y = 56
@@ -52,17 +71,16 @@ def draw_list(items, selected, path=""):
         title_y = 0
         path_y = 24
         list_start_y = 40
-    screen.draw_string(0, title_y, "File Explorer", -1, 18)
-    screen.draw_string(0, title_y + 8, f"Hoax OS {settings.settings.get('version')}", -1, 18)
+    screen.draw_string(0, title_y, "File Explorer", -1, color1)
+    screen.draw_string(0, title_y + 8, f"Hoax OS {EmuSettings.settings.get('version')}", -1, color1)
     if path:
-        screen.draw_string(0, path_y, ("disk/" + path)[:32], 18, 9)
+        screen.draw_string(0, path_y, ("disk/" + path)[:32], color1, color2)
     else:
-        screen.draw_string(0, path_y, "disk/", 18, 9)
-    screen.draw_string(0, path_y + 8, "{bar_h}"*32, -1, 18)
+        screen.draw_string(0, path_y, "disk/", color1, color2)
+    screen.draw_string(0, path_y + 8, "{bar_h}"*32, -1, color1)
     y = list_start_y
     total_size = 0
     for i in range(min(len(items), item_limit)):
-        cursor = ">" if i == selected else " "
         if items[i][0] == "dir":
             prefix = "{folder} "
         elif len(items[i]) > 4 and items[i][4] == "aap":
@@ -76,17 +94,17 @@ def draw_list(items, selected, path=""):
         # Add new field to display file size
         total_size += os.path.getsize(os.path.join("disk", path, items[i][1]))
         if show_extensions:
-            screen.draw_string(0, y, cursor + prefix + items[i][1][:16], -1, 23)
+            screen.draw_string(8, y, prefix + items[i][1][:16], color1 if i == selected else color2, color3)
         else:
             # Use rsplit() to split the file name on the last dot, keeping the leading parts
             file_name_without_ext = items[i][1].rsplit(".", 1)[0]
-            screen.draw_string(0, y, cursor + prefix + file_name_without_ext, -1, 23)
+            screen.draw_string(8, y, prefix + file_name_without_ext, color1 if i == selected else color2, color3)
         y = y + 12
 
     # File size / items remaining / logo UI      VVVVVVVV
 
-    screen.draw_rect(0, 168, 256, 192, 18)
-    screen.draw_string(0, 184, "{curve_tr}" + "{bar_h}"*30 + "{curve_tl}", -1, 9)
+    screen.draw_rect(0, 168, 256, 192, color1)
+    screen.draw_string(0, 184, "{curve_tr}" + "{bar_h}"*30 + "{curve_tl}", -1, color2)
     #total current folder size
     if 128000 - total_size > 0:
         too_big = False
@@ -96,28 +114,49 @@ def draw_list(items, selected, path=""):
     
     fullstring1 = f"{{bar_v}}Size: {(total_size)/1024:.2f}kb ({"Too big!" if too_big else remaining_size})"
 
-    screen.draw_string(0, 176, fullstring1, -1, 9)
+    screen.draw_string(0, 176, fullstring1, -1, color2)
     
-    screen.draw_char(248, 176, (screen.char_map['bar_v'][0]), -1, 9)
+    screen.draw_char(248, 176, (screen.char_map['bar_v'][0]), -1, color2)
 
     numItems = len(items)
 
-    fullstring2 = "{bar_v}" + str(min(numItems, 9)) + "/" + str(item_limit) + " items {bar_v}"
-    screen.draw_string(256-(len(fullstring2) * 8)//2, 160, fullstring2, 18, 9 if numItems < 10 else 11)
-    
-    screen.draw_string(0, 168, "{curve_br}" + "{bar_h}"*19 + "{bar_ht}" + "{bar_h}"*10 + "{bar_vl}", -1, 9)
+    fullstring2 = "{bar_v}" + str(min(numItems, color2)) + "/" + str(item_limit) + " items {bar_v}"
+    screen.draw_string(256-(len(fullstring2) * 8)//2, 160, fullstring2, color1, color2 if numItems < 10 else 11)
+     
+    screen.draw_string(0, 168, "{curve_br}" + "{bar_h}"*19 + "{bar_ht}" + "{bar_h}"*10 + "{bar_vl}", -1, color2)
 
-    screen.draw_string(256-(len(fullstring2) * 8)//2, 152, "{curve_br}" + "{bar_h}" * (len(fullstring2) // 2 - 2) + "{curve_bl}", 18, 9)
+    screen.draw_string(256-(len(fullstring2) * 8)//2, 152, "{curve_br}" + "{bar_h}" * (len(fullstring2) // 2 - 2) + "{curve_bl}", color1, color2)
 
     screen.draw_aai(216, 1, 'resources/logo.aai')
 
-    screen.update()
+    # Draw the cursor just before updating the screen
+    screen.draw_cursor(cursor_type)
+    screen.update(False, False)
+
+if EmuSettings.settings.get("showSplash"):
+    screen.clear()
+    if splash == 0:
+        screen.draw_aai(0, 0, "resources/splashes/classic.aai")
+    elif splash == 1:
+        screen.draw_aai(0, 0, "resources/splashes/gateway.aai")
+    elif splash == 2:
+        screen.draw_aai(0, 0, "resources/splashes/river.aai")
+    elif splash == 3:
+        screen.draw_aai(0, 0, "resources/splashes/steppes.aai")
+    if EmuSettings.settings.get("model") != "alpha":
+        print('Warning, you have selected a model that is coded to refresh every 128 frames like e-ink. If you have epilepsy it is recommended to set "model" back to "alpha".')
+        screen.update(False, False)
+        time.sleep(1.5)
+    else:
+        screen.update(False, False)
+        time.sleep(1.5)
+
 
 # Main program
 programs = get_programs()
 if not programs:
-    screen.draw_string(0, 8, "No .aap programs found in disk/... HOW???", -1, 23)
-    screen.update()
+    screen.draw_string(0, 8, "No .aap programs found in disk/... HOW???", -1, color3)
+    screen.update(False, False)
 
 nav_stack = [[programs, 0]]
 running = True
@@ -133,7 +172,28 @@ while running:
         name = nav_stack[i][0][nav_stack[i][1]][1]
         path = path + "/" + name if path else name.replace(".aap", "")
     
-    draw_list(items, selected, path)
+    if screen.frame % 256 == 0:
+        refresh_settings()
+
+
+    mouse_x, mouse_y = screen.getMousePos()
+    if len(nav_stack) > 1:
+        list_start_y = 56
+    else:
+        list_start_y = 40
+    item_height = 12
+    idx = (mouse_y - list_start_y) // item_height
+    over_back = len(nav_stack) > 1 and (0 <= mouse_x < 60 and 0 <= mouse_y < 20)
+    over_item = 0 <= idx < len(items)
+
+    # Draw the appropriate cursor
+    if over_back or over_item:
+        cursor_type = "hand"
+    else:
+        cursor_type = "pointer"
+
+    draw_list(items, selected, path, cursor_type)
+
     for get_events:
         if quit_event:
             running = False
@@ -170,7 +230,7 @@ while running:
                     beep("E5", 0.05)
                 else:
                     beep("A5", 0.05)
-                    screen.clear(9)
+                    screen.clear(color2)
                     running = False
                     try:
                         # Launch correct program for file type

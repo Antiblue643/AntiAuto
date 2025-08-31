@@ -7,5 +7,5 @@ print("numpy", np.__version__)
 
 class Settings:
     def __init__(self):
-        with open("settings.json", 'r') as f:
+        with open("EmuSettings.json", 'r') as f:
             self.settings = json.load(f)
