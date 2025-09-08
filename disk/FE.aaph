@@ -62,7 +62,7 @@ def draw_list(items, selected, path="", cursor_type="pointer"):
     screen.clear(color2)
     # Draw Back button if not at root
     if len(nav_stack) > 1:
-        screen.draw_rect(0, 0, 60, 20, color1)  # Button background
+        screen.draw_rect((0, 0), (60, 20), color1)  # Button background
         screen.draw_string(4, 6, "< Back", color2, color3)
         title_y = 24
         path_y = 40
@@ -103,7 +103,7 @@ def draw_list(items, selected, path="", cursor_type="pointer"):
 
     # File size / items remaining / logo UI      VVVVVVVV
 
-    screen.draw_rect(0, 168, 256, 192, color1)
+    screen.draw_rect((0, 168), (256, 192), color1)
     screen.draw_string(0, 184, "{curve_tr}" + "{bar_h}"*30 + "{curve_tl}", -1, color2)
     #total current folder size
     if 128000 - total_size > 0:
@@ -132,6 +132,11 @@ def draw_list(items, selected, path="", cursor_type="pointer"):
     # Draw the cursor just before updating the screen
     screen.draw_cursor(cursor_type)
     screen.update(False, False)
+
+if EmuSettings.settings.get("startupJingle"):
+    for note in ["E3", "A3", "E4"]:
+        audio.beep(note, 0.5)
+        audio.rest(0.1)
 
 if EmuSettings.settings.get("showSplash"):
     screen.clear()
@@ -201,7 +206,7 @@ while running:
         if key_down_event:
             if key_e:
                 show_extensions = not show_extensions
-                beep("A#4", 0.05)
+                audio.beep("A#4", 0.05)
                 programs = get_programs()  # Refresh list with new toggle state
             elif key_ESCAPE:
                 raise SystemExit()
@@ -222,14 +227,14 @@ while running:
         if left_click:
             if over_back:
                 nav_stack.pop()
-                beep("D#4", 0.05)
+                audio.beep("D#4", 0.05)
             elif 0 <= idx < len(items):
                 item = items[idx]
                 if item[0] == "dir":
                     nav_stack.append([item[3], 0])
-                    beep("E5", 0.05)
+                    audio.beep("E5", 0.05)
                 else:
-                    beep("A5", 0.05)
+                    audio.beep("A5", 0.05)
                     screen.clear(color2)
                     running = False
                     try:

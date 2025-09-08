@@ -1,10 +1,12 @@
 {
     "showFPS": false,
+    "windowSize": [256, 192],
+    "windowScale": 3,
     "showMousePos": false,
-    "showSplash": false,
-    "startupJingle": false,
-    "version": "0.1.0_dev3",
-    "useBios": false,
+    "showSplash": true,
+    "startupJingle": true,
+    "version": "0.1.0",
+    "useBios": true,
     "model": "alpha",
     "drawAAICache": false,
     "drawMemUsage": false

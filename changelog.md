@@ -72,3 +72,14 @@ Preparation for desktop, added ghosting/refreshing to supported models, updated 
 
 Added memory usage and aai cache display in the emulator settings, improved performance in drawing aai images, changed the "gateway" splash, refactored a little bit, removed the desktop stuff in favor of a settings app (the desktop stuff was a little useless, and wallpapers are now splashes), added user settings that goes with the settings app to change the color scheme and splash screen, added an emergency clear shortcut (ctrl + f4), and added a custom cursor system with draw_cursor().
 </details>
+
+<details><summary><b>0.1.0α</b></summary>
+<h4>What's new:</h4>
+A summary of the dev versions:
+<br><b>Dev1</b>: Model system, BIOS, games folder (with pong), and json settings.</br>
+<br><b>Dev2</b>: Ghosting, aai update, splash screens, frame counter, more experiments.</br>
+<br><b>Dev3</b>: Settings app & user settings, emergency clear hotkey, custom cursors, performance improvements.
+<br><h3>0.1.0α Changes</h3></br>
+Added an expansion system (comes with a 3d module and a somewhat working game), easier shortcuts for running (run.bat), requirements.txt, updated a lot of drawing methods (most positions use tuples now), relative mouse motion, and added lots and lots of docstrings.
+<br><b>The Sample system is being discontinued. For now, beeper is the only function that can play audio. A new waveform system in place is being developed.</b></br>
+</details>

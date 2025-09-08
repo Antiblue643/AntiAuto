@@ -74,7 +74,7 @@ def main():
             screen.draw_string(8, 120, "Press ESC to return here.", -1, 0)
         else:
             screen.draw_string(0, 0, url[:32], -1, 8)
-            screen.draw_line(0, 8, 256, 8, 8)
+            screen.draw_line((0, 8), (256, 8), 8)
             draw_content(content, scroll)
                 
         screen.update()

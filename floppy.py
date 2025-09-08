@@ -14,8 +14,8 @@ class Parser:
             'import main': 'import pygame as pg',
             'import screen': 'from display import Display as d\ndisplay = d()',
             'import floppy': 'from floppy import Parser as aap\nparser = aap()',
-            'import audio': 'from audio import Audio as a\naudio = a()\nbeep = audio.beep\nplay_note = audio.play_note',
-            'import essentials': 'import pygame as pg\nfrom display import Display as d\nscreen = d()\nfrom audio import Audio as a\naudio = a()\nbeep = audio.beep\nplay_note = audio.play_note',
+            'import audio': 'from audio import Audio as a\naudio = a()',
+            'import essentials': 'import pygame as pg\nfrom display import Display as d\nscreen = d()\nfrom audio import Audio as a\naudio = a()',
             'get_events': 'event in pg.event.get()',
             'quit_event': 'event.type == pg.QUIT',
             'key_down_event': 'event.type == pg.KEYDOWN',
@@ -29,11 +29,12 @@ class Parser:
             'scroll_down': 'event.type == pg.MOUSEBUTTONDOWN and event.button == 5',
             'obtain_keys_held()': 'pg.key.get_pressed()',
             'keycode_': 'pg.K_',
+            'play_note': 'play_wave',
             #Attempt some vectormaster stuffs
             'draw_dot': 'draw_pixel',
-            'tone': 'play_note' #Volume & frequency will need to be swapped
+            'tone(': 'play_wave(' #Args will need to be adjusted (replaced "tone" in stone so I had to make it with the parentheses)
         }
-        # Add special key combinations dictionary
+        # Special key combinations dictionary
         self.special_keys = { #key, modifier
             ('b', 'CTRL'): 'raise SystemExit',
             ('F4', 'CTRL'): 'screen.clear()'
@@ -48,6 +49,7 @@ class Parser:
             lines = file.readlines()
         
         processed_lines = []
+        processed_lines.append('#    / \\    WARNING!!!!!!\n#   / | \\   THIS IS A TEMP FILE!\n#  /  !  \\  DO NOT EDIT!\n# /_______\\ YOUR CHANGES WILL NOT SAVE!\n\n')
         for i, line in enumerate(lines):
             indentation = len(line) - len(line.lstrip())
             spaces = ' ' * indentation
@@ -85,6 +87,7 @@ class Parser:
                         f'{spaces}        {action}\n'
                     )
                     processed_lines.append(special)
+                    processed_lines.append(spaces + '    pg.event.set_grab(True)\n')
             elif processed_line:
                 processed_lines.append(spaces + processed_line + '\n')
 

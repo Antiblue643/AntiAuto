@@ -9,7 +9,7 @@ def rows(offset):
     num_bars = 8
     for i in range(num_bars):
         x = int((i * 32 + offset) % 256)  # 256 is screen width
-        screen.draw_rect(x, 0, x + bar_width, 192, i % 2 + 1)  # alternate colors for contrast
+        screen.draw_rect((x, 0), (x + bar_width, 192), i % 2 + 1)  # alternate colors for contrast
 
 def main():
     t = 0

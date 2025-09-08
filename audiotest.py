@@ -24,7 +24,7 @@ if test == 1:
         if sample not in range(0x11, 0x17):
             print(f"Sample {sample:02d}")
             for note in notes:
-                audio.play_note(channel, sample, note, 31, 0.1)
+                audio.play_wave(channel, sample, note, 31, 0.1)
                 audio.rest(0.25)
             audio.rest(1)
         else:
@@ -39,7 +39,7 @@ elif test == 3:
 
     for n1, n2 in zip(chan1, chan2):
         if n1:
-            audio.play_note("L", 0x18, n1, 31, 0.25)
+            audio.play_wave("L", 0x18, n1, 31, 0.25)
         if n2:
-            audio.play_note("R", 0x18, n2, 31, 0.25)
+            audio.play_wave("R", 0x18, n2, 31, 0.25)
         audio.rest(0.25)

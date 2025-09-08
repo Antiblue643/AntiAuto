@@ -16,7 +16,7 @@ screen.draw_string(0, 0, "Pixels Demo!", -1, 7) #draws a string (background colo
 def main(): #Main function.
     running = True #needed
     while running: #needed
-        screen.draw_pixel(random.randint(0, 256), random.randint(8, 192), 23) #draws a pixel (color 23) at a random position.
+        screen.draw_pixel((random.randint(0, 256), random.randint(8, 192)), 23) #draws a pixel (color 23) at a random position.
         screen.update(False, False) #updates the screen. First argument is whether to clear the screen, second is whether to show the mouse cursor.
         for get_events: #the following code is needed for the program to work.
             if quit_event: #if the user quits the program.

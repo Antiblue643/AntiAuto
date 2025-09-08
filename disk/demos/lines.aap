@@ -52,11 +52,11 @@ def render():
             # Draw line between points if they're close enough
             dist = math.sqrt((p2[0] - p1[0])**2 + (p2[1] - p1[1])**2)
             if dist < 64:  # Only draw lines between nearby points
-                screen.draw_line(int(p1[0]), int(p1[1]), int(mx), int(my), 23 if dist < 32 else 13)
-                screen.draw_line(int(mx), int(my), int(p2[0]), int(p2[1]), 23 if dist < 32 else 13)
-        
+                screen.draw_line((int(p1[0]), int(p1[1])), (int(mx), int(my)), 23 if dist < 32 else 13)
+                screen.draw_line((int(mx), int(my)), (int(p2[0]), int(p2[1])), 23 if dist < 32 else 13)
+
         # Draw the point itself
-        screen.draw_ellipse(int(p1[0]), int(p1[1]), 2, 2, 23)
+        screen.draw_ellipse((int(p1[0]), int(p1[1])), (2, 2), 23)
 
 def main():
     init_points()

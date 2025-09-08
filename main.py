@@ -1,6 +1,12 @@
+#!/usr/bin/env python
 import pygame as pg
-import time
 import os
+import sys
+from pathlib import Path
+
+project_dir = Path(__file__).parent #no idea if this stuff works
+sys.path.append(str(project_dir))
+
 from display import Display as d
 from floppy import Parser as p
 from audio import Audio as a
@@ -17,10 +23,6 @@ if __name__ == "__main__":
             try:
                 if os.path.exists("temp.py"):
                     os.remove("temp.py")
-                    if settings.settings.get("startupJingle"):
-                        for note in ["E3", "A3", "E4"]:
-                            audio.beep(note, 0.5)
-                            audio.rest(0.1)
                 parser.parse_keys("bios.aaph" if settings.settings.get("useBios") else "FE.aaph")
                 parser.run()
             except SystemExit:

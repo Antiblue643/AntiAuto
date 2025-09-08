@@ -1,0 +1,246 @@
+import essentials
+from expansions import Accelerator
+import math
+import random
+
+acc = Accelerator()
+
+chunk_data = {}
+atlas = 'disk/games/craft3d/textures/atlas.aai'
+
+blocks = { # face colors, if solid (cull neighbors), and model.
+    "grass_block": ((3, 3, 3, 18, 3, 3), True, "cube"),
+    "dirt": ((3, 3, 3, 3, 3, 3), True, "cube"),
+    "stone": ((16, 16, 16, 16, 16, 16), True, "cube"),
+    "bedrock": ((1, 1, 1, 1, 1, 1), True, "cube"),
+    "log": ((3, 3, 19, 19, 3, 3), True, "cube"),
+    "leaves": ((17, 17, 17, 17, 17, 17), True, "cube"),
+    "grass": ((10, 10), False, "cross") #Cross model, so 2 colors
+}
+
+def cube(x, y, z, visableFaces, block_id, model="cube"):
+    colors = blocks[block_id][0]
+    if model == "cube":
+        if visableFaces[0]:
+            acc.draw_quad((x, y, z + 0.5), (0, 0, 0), (1, 1), colors[0], (0, 0), (0, 0, 0), True)  # Front
+        if visableFaces[1]:
+            acc.draw_quad((x, y, z - 0.5), (0, 180, 0), (1, 1), colors[1], (0, 0), (0, 0, 0), True)  # Back
+        if visableFaces[2]:
+            acc.draw_quad((x, y + 0.5, z), (-90, 0, 0), (1, 1), colors[2], (0, 0), (0, 0, 0), True)  # Bottom
+        if visableFaces[3]:
+            acc.draw_quad((x, y - 0.5, z), (90, 0, 0), (1, 1), colors[3], (0, 0), (0, 0, 0), True)  # Top
+        if visableFaces[4]:
+            acc.draw_quad((x + 0.5, y, z), (0, 90, 0), (1, 1), colors[4], (0, 0), (0, 0, 0), True)  # Right
+        if visableFaces[5]:
+            acc.draw_quad((x - 0.5, y, z), (0, -90, 0), (1, 1), colors[5], (0, 0), (0, 0, 0), True)  # Left
+    elif model == "cross":
+        acc.draw_quad((x, y, z), (0, 45, 0), (1, 1), colors[0], (0, 0), (0, 0, 0), False)
+        acc.draw_quad((x, y, z), (0, -45, 0), (1, 1), colors[1], (0, 0), (0, 0, 0), False)
+
+world_data = {}
+
+def add_tree(x, y, z):
+    structure = []
+    for i in range(4):
+        structure.append((0, -i, 0, "log"))
+    for dx in range(-2, 3):
+        for dy in range(3, 6):
+            for dz in range(-2, 3):
+                if abs(dx) + abs(dz) < 4 and not (dx == 0 and dz == 0 and dy == 3):
+                    structure.append((dx, -dy, dz, "leaves"))
+    return structure
+
+def chunk(x, z):
+    for i in range(8):
+        for j in range(8):
+            for k in range(16):
+                if k == 0:
+                    block_type = "grass_block"
+                elif k < 4:
+                    block_type = "dirt"
+                elif k < 15:
+                    block_type = "stone"
+                else:
+                    block_type = "bedrock"
+                world_data[(x + i, k, z + j)] = block_type
+
+            # chance of tree on surface
+            if random.random() < 0.01:
+                for (dx, dy, dz, block_type) in add_tree(x + i, 1, z + j):
+                    world_data[(x + i + dx, dy, z + j + dz)] = block_type
+
+            # chance of grass on surface
+            if random.random() < 0.05 and block_type is None:
+                world_data[(x + i, -1, z + j)] = "grass"
+
+
+def build_world(size=2):
+    global world_data
+    world_data = {}
+    for i in range(-size, size):
+        for j in range(-size, size):
+            chunk(i * 8, j * 8)
+
+def draw_world():
+    for (cx, cy, cz), block_id in world_data.items():
+        # Skip unknown blocks
+        if block_id not in blocks:
+            continue
+
+        neighbors = [
+            (cx, cy, cz + 1),  # front
+            (cx, cy, cz - 1),  # back
+            (cx, cy + 1, cz),  # bottom
+            (cx, cy - 1, cz),  # top
+            (cx + 1, cy, cz),  # right
+            (cx - 1, cy, cz),  # left
+        ]
+
+        visableFaces = []
+        for npos in neighbors:
+            if npos not in world_data:
+                visableFaces.append(True)   # no neighbor at all → visible
+            else:
+                n_block = world_data[npos]
+                if n_block not in blocks:
+                    visableFaces.append(True)
+                else:
+                    is_solid = blocks[n_block][1]
+                    visableFaces.append(not is_solid)  # visible only if neighbor is non-solid
+
+        model = blocks[block_id][2]
+        cube(cx, cy, cz, visableFaces, block_id, model=model)
+
+# ----- physics stuff -----
+def get_block_id_at(pos):
+    return world_data.get(pos, None)
+
+def is_solid_block_id(block_id: str) -> bool:
+    return block_id in blocks and blocks[block_id][1]
+
+def is_solid_at(x, y, z) -> bool:
+    pos = (int(math.floor(x)), int(math.floor(y)), int(math.floor(z)))
+    bid = get_block_id_at(pos)
+    return is_solid_block_id(bid) if bid else False
+
+
+def playerPhysics(pos, vel, camHeight, gravity):
+    # Apply gravity
+    vel[1] += gravity
+
+    # Check Y collision first (vertical movement)
+    next_y = pos[1] + vel[1]
+    feet_y = next_y + camHeight
+    
+    # Check if feet would be inside a solid block
+    feet_block_y = int(math.floor(feet_y))
+    feet_x = pos[0]  # Use current X position for Y collision check
+    feet_z = pos[2]  # Use current Z position for Y collision check
+    
+    if is_solid_at(feet_x, feet_block_y, feet_z):
+        vel[1] = 0
+    else:
+        # No collision, update Y position
+        pos[1] = next_y
+
+    # Handle horizontal movement (X and Z)
+    next_x = pos[0] + vel[0]
+    next_z = pos[2] + vel[2]
+    
+    # Check X collision
+    if not is_solid_at(next_x, feet_y, pos[2]):
+        pos[0] = next_x
+    else:
+        vel[0] = 0
+    
+    # Check Z collision    
+    if not is_solid_at(pos[0], feet_y, next_z):
+        pos[2] = next_z
+    else:
+        vel[2] = 0
+
+    # Apply friction
+    vel[0] *= 0.9
+    vel[2] *= 0.9
+    
+    # # Debug
+    # feet_block = (int(math.floor(pos[0])), int(math.floor(feet_y)), int(math.floor(pos[2])))
+    # print("Player pos:", pos, "Feet at:", (pos[0], feet_y, pos[2]), "Block:", world_data.get(feet_block))
+    vel[1] *= 0.9
+
+    return pos, vel
+
+
+def main():
+    acc.camX = 0
+    acc.camY = 0 #vertical direction
+    acc.camZ = 0
+
+    acc.pitch = 0
+    acc.yaw = 0
+    movespeed = 0.5
+    sensitivity = 100
+
+    camHeight = 1.8
+
+    pos = [0.0, -15.0, 0.0]   # starting player position
+    vel = [0.0, 0.0, 0.0]
+    camHeight = 1.8
+    gravity = 0.2
+    movespeed = 0.2
+
+    acc.wireframe = False
+    build_world()
+    running = True
+    while running:
+        screen.clear(9)
+        draw_world()
+        acc.flush()
+        screen.draw_line((128, 96-4), (128, 96+4), 23)
+        screen.draw_line((128+4, 96), (128-4, 96), 23)
+        screen.update(False, False)
+        keys = obtain_keys_held()
+        relMouse = screen.getRelMouse()
+
+        pos, vel = playerPhysics(pos, vel, camHeight, gravity)
+
+        # Update camera position based on yaw and pitch
+        if keys[keycode_w]:
+            vel[0] -= math.sin(math.radians(acc.yaw)) * movespeed
+            vel[2] += math.cos(math.radians(acc.yaw)) * movespeed
+        if keys[keycode_s]:
+            vel[0] += math.sin(math.radians(acc.yaw)) * movespeed
+            vel[2] -= math.cos(math.radians(acc.yaw)) * movespeed
+        if keys[keycode_a]:
+            vel[0] -= math.sin(math.radians(acc.yaw + 90)) * movespeed
+            vel[2] += math.cos(math.radians(acc.yaw + 90)) * movespeed
+        if keys[keycode_d]:
+            vel[0] -= math.sin(math.radians(acc.yaw - 90)) * movespeed
+            vel[2] += math.cos(math.radians(acc.yaw - 90)) * movespeed
+
+        acc.camX, acc.camY, acc.camZ = pos
+
+        if keys[keycode_SPACE] and vel[1] == 0:
+            vel[1] = -1
+        #if keys[keycode_LSHIFT]:
+        #    vel[1] = 0.5
+
+        if relMouse != (0, 0):
+            acc.yaw -= relMouse[0] * 0.1 * (sensitivity//100)
+            acc.pitch += relMouse[1] * 0.1 * (sensitivity//100)
+            acc.pitch = max(-89, acc.pitch)  # Prevent flipping
+            acc.pitch = min(89, acc.pitch)  # Prevent flipping
+        for get_events:
+            if key_down_event:
+                if key_r:
+                    pos = [0, -5, 0]
+                    vel = [0, 0, 0]
+                    acc.pitch = 0
+                    acc.yaw = 0
+                    build_world()
+                if key_v:
+                    acc.wireframe = not acc.wireframe
+            if quit_event:
+                running = False
+
+main()

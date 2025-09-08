@@ -65,9 +65,9 @@ def draw_palette(selected_color):
     for i in range(PALETTE_SIZE):
         x = 8 + (i % PALETTE_COLS) * PALETTE_CELL
         y = 8 + (i // PALETTE_COLS) * PALETTE_CELL
-        screen.draw_rect(x, y, x + PALETTE_CELL, y + PALETTE_CELL, i)
+        screen.draw_rect((x, y), (x + PALETTE_CELL, y + PALETTE_CELL), i)
         if i == selected_color:
-            screen.draw_rect(x, y, x + PALETTE_CELL, y + PALETTE_CELL, i, 23)
+            screen.draw_rect((x, y), (x + PALETTE_CELL, y + PALETTE_CELL), i, 23)
 
 def draw_tools(selected_tool):
     for i, name in enumerate(TOOLS):
@@ -82,10 +82,10 @@ def draw_buttons():
     screen.draw_string(200, 30, "{cross_box}", 0, 23)
 
 def draw_canvas():
-    screen.draw_rect(CANVAS_X - 1, CANVAS_Y - 1, CANVAS_X + CANVAS_W + 1, CANVAS_Y + CANVAS_H + 1, 7)
+    screen.draw_rect((CANVAS_X - 1, CANVAS_Y - 1), (CANVAS_X + CANVAS_W + 1, CANVAS_Y + CANVAS_H + 1), 7)
     for y in range(CANVAS_H):
         for x in range(CANVAS_W):
-            screen.draw_pixel(CANVAS_X + x, CANVAS_Y + y, canvas[y][x])
+            screen.draw_pixel((CANVAS_X + x, CANVAS_Y + y), canvas[y][x])
 
 def get_palette_at(mx, my):
     for i in range(PALETTE_SIZE):
@@ -126,9 +126,9 @@ def save_canvas():
         f.write(f"aai_{CANVAS_W}x{CANVAS_H}_{data}")
     
     # Success feedback
-    beep("G4", 0.1)
+    audio.beep("G4", 0.1)
     audio.rest(0.2)
-    beep("B4", 0.1)
+    audio.beep("B4", 0.1)
     audio.rest(0.2)
 
 def load_canvas(initial=False):
@@ -169,14 +169,14 @@ def load_canvas(initial=False):
                     
         canvas_buffers[active_mode] = canvas
         if not initial:
-            beep("F4", 0.1)
+            audio.beep("F4", 0.1)
             audio.rest(0.2)
-            beep("F4", 0.1)
+            audio.beep("F4", 0.1)
             audio.rest(0.2)
         screen.clear()
     except Exception as e:
         print(f"Load failed: {e}")
-        play_note("C1", 0x12, "C4", 31, 0.5)
+        audio.play_wave("C1", 0x12, "C4", 31, 0.5)
 
 def toggle_canvas():
     global active_mode, canvas, CANVAS_W, CANVAS_H

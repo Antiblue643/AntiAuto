@@ -34,7 +34,7 @@ def main():
                             print("Loaded from disk/notepadSave.aat")
                     else:
                         print("disk/notepadSave.aat not found")
-                        beep("A1", 0.5)
+                        audio.beep("A1", 0.5)
                 elif key_n and init_mods & keymod_CTRL:
                     if os.path.exists("disk/notepadSave.aat"):
                         os.remove("disk/notepadSave.aat")
@@ -44,10 +44,10 @@ def main():
                     text = ""
                 else:
                     text += event.unicode
-                    play_note("C1", 0x13, random.randint(220, 440), 31, 0.01)
+                    audio.play_wave("C1", 0x13, random.randint(220, 440), 31, 0.01)
         if "gaster" in text.lower():
             for i in range(5):
-                play_note("C1", 0x1b, 880/(i + 1), 7, 0.025)
+                audio.play_wave("C1", 0x1b, 880/(i + 1), 7, 0.025)
                 audio.rest(0.05)
             raise SystemExit()
 

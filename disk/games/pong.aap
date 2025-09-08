@@ -2,7 +2,7 @@ import essentials
 import random
 
 def ball(x, y):
-    screen.draw_rect(x-4, y-4, x+4, y+4, 23)
+    screen.draw_rect((x-4, y-4), (x+4, y+4), 23)
 
 def beep():
     audio.beep(random.randint(110, 220), 0.05)
@@ -43,8 +43,8 @@ def main():
             if p2y > 192: p2y = 192
         
         ball(ballx, bally)
-        screen.draw_rect(4, (p1y+80)-96, 8, (p1y+112)-96, 23)
-        screen.draw_rect(248, (p2y+80)-96, 252, (p2y+112)-96, 23)
+        screen.draw_rect((4, (p1y+80)-96), (8, (p1y+112)-96), 23)
+        screen.draw_rect((248, (p2y+80)-96), (252, (p2y+112)-96), 23)
         screen.draw_string(0, 0, f"{scorep1}::{scorep2}", -1, 9)
         screen.update()
         

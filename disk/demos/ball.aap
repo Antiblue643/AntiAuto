@@ -103,7 +103,7 @@ def main():
             b.update(dt)
             if b.age > b.lifetime:
                 balls.remove(b)
-                audio.play_note("C1", 17, 880, 15, 0.1)
+                audio.play_wave("C1", 17, 880, 15, 0.1)
             elif b.age > (b.lifetime - 0.1): #show pop (dither3) sprite right before removing
                 b.character = screen.char_map['dither3'][0]
 

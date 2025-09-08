@@ -1,19 +1,13 @@
-#file length for each sample is approximately 100 ntsc frames,
-#release point is 48 ntsc frames
-
-#original export has 150 bpm (60hz)
-#pattern length is 32, release point is at row 16, stop effect is at row 32.
-#each sample (00-28.wav) in resources/samples/ is playing at C-4, 16-bit integer at 44100 hz
-
-#There are 4 channels (L, C1, C2, R), and a beeper.
-#The beeper can't play samples, instead it only plays 1-bit square
-#it has 5-bit volume
+#There are 4 wave channels with 5-bit volume (L, C1, C2, R), and a 1-bit beeper.
+#The beeper can't play waves, instead it only plays 1-bit square
+#Each wave channel can play noise (index -1) or a wave of up to 64 samples (0-31 values)
+#Technically, I guess, with the right kind of programming, you could play 5-bit PCM audio on the wave channels.
 
 from external import *
 import os
-import pygame.sndarray
+import json
 
-SAMPLES_PATH = os.path.join("resources", "samples")
+WAVE_FILE = 'resources/waves.json'
 CHANNELS = 4
 CHANNEL_MAP = {
     "L": 0,
@@ -44,65 +38,20 @@ def apply_pan(arr, pan):
         stereo[:, 1] = arr[:, 1] * right * -1
         return stereo
     return arr
-def play_sample_with_release(arr, release_frame, frame_rate, duration_sec):
-    """
-    Play arr[0:release_frame] (sustain), jump to arr[release_frame:] (release) at duration_sec.
-    If duration_sec is longer than the release point, just play the sample out.
-    """
-    release_sample = int(release_frame * frame_rate / 60)
-    total_len = arr.shape[0]
-    needed = int(duration_sec * frame_rate)
-
-    # If duration is longer than or equal to the release point, play the sample as-is
-    if needed >= release_sample:
-        return arr
-
-    # Otherwise, play sustain up to duration, then jump to release section
-    if arr.ndim == 2:
-        sustain = arr[:needed, :]
-        release = arr[release_sample:, :]
-    else:
-        sustain = arr[:needed]
-        release = arr[release_sample:]
-    out = np.concatenate([sustain, release], axis=0)
-    # Truncate to original sample length if needed
-    if out.shape[0] > total_len:
-        out = out[:total_len]
-    return out
-
-def pitch_shift(sound, semitones):
-    """Return a new pygame Sound object, pitch-shifted by the given number of semitones."""
-    arr = pygame.sndarray.array(sound)
-    rate = 2 ** (semitones / 12)
-    # Handle mono and stereo
-    if arr.ndim == 1:
-        indices = np.round(np.arange(0, len(arr), rate)).astype(int)
-        indices = indices[indices < len(arr)]
-        arr_shifted = arr[indices]
-    else:
-        indices = np.round(np.arange(0, arr.shape[0], rate)).astype(int)
-        indices = indices[indices < arr.shape[0]]
-        arr_shifted = arr[indices, :]
-    return pg.mixer.Sound(buffer=arr_shifted.astype(np.int16).tobytes())
 
 class Audio:
     def __init__(self):
         pg.mixer.init(frequency=44100, size=-16, channels=2)
         self.channels = [pg.mixer.Channel(i) for i in range(CHANNELS)]
-        self.samples = self.load_samples()
         self.beeper_channel = pg.mixer.Channel(CHANNELS)  # 5th channel for beeper
+        self.waves = {}
 
-    def load_samples(self):
-        samples = []
-        for i in range(29):  # 00-28.wav
-            filename = os.path.join(SAMPLES_PATH, f"{i:02}.wav")
-            if os.path.exists(filename):
-                samples.append(pg.mixer.Sound(filename))
-            else:
-                samples.append(None)
-        return samples
-
+    def load_waves(self):
+        with open(WAVE_FILE, 'r') as f:
+            self.waves = json.load(f)
+        
     def note_to_freq(self, note):
+        """Convert a musical note to its frequency in Hz."""
         if isinstance(note, str):
             notes = ["C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B"]
             # Support for sharps and flats
@@ -119,6 +68,12 @@ class Audio:
             return note
 
     def beep(self, freq, duration):
+        """
+        Play a beep sound.
+        Args:
+            freq (str, float): The frequency of the beep sound.
+            duration (float): The duration of the beep sound in seconds.
+        """
         freq = self.note_to_freq(freq)
         # Generate 1-bit square wave for beeper (mono)
         sample_rate = 44100
@@ -128,61 +83,39 @@ class Audio:
         sound = pg.mixer.Sound(buffer=wave.tobytes())
         self.beeper_channel.play(sound)
 
-    def set_channel(self, channel, sample, note):
-        if isinstance(channel, int):
-            channel = INV_CHANNEL_MAP.get(channel, "C1")
-        pan = PAN_MAP.get(channel, (0.5, 0.5))
-        channel_idx = CHANNEL_MAP.get(channel, 0)
-        if 0 <= channel_idx < CHANNELS and 0 <= sample < len(self.samples):
-            snd = self.samples[sample]
-            if snd:
-                base_note = "C4"
-                base_freq = self.note_to_freq(base_note)
-                target_freq = self.note_to_freq(note)
-                semitones = 12 * np.log2(target_freq / base_freq)
-                arr = pygame.sndarray.array(snd)
-                arr = pitch_shift(snd, semitones)
-                arr = pygame.sndarray.array(arr)
-                arr = apply_pan(arr, pan)
-                snd_shifted = pg.mixer.Sound(buffer=arr.tobytes())
-                self.channels[channel_idx].play(snd_shifted)
-            else:
-                print(f"Sample {sample} not found.")
+    def play_wave(self, channel, wave, note, volume=31, duration=0.5):
+        '''
+        Play a waveform on a specified channel with given volume.
+        Args:
+            channel (str, int): The channel to play the wave on ('L', 'C1', 'C2', 'R') or 0-3.
+            wave (str, int, list): The waveform to play (wave name, index, or raw values (0-31, must be maximum 64 samples)).
+            volume (int): The volume level (0-31).
+        '''
+        pass
 
-    def play_note(self, channel, sample, note, volume, duration):
-        if isinstance(channel, int):
-            channel = INV_CHANNEL_MAP.get(channel, "C1")
-        pan = PAN_MAP.get(channel, (0.5, 0.5))
-        channel_idx = CHANNEL_MAP.get(channel, 0)
-        if 0 <= channel_idx < CHANNELS and 0 <= sample < len(self.samples):
-            snd = self.samples[sample]
-            if snd:
-                base_note = "C4"
-                base_freq = self.note_to_freq(base_note)
-                target_freq = self.note_to_freq(note)
-                semitones = 12 * np.log2(target_freq / base_freq)
-                arr = pygame.sndarray.array(snd)
-                arr = pitch_shift(snd, semitones)
-                arr = pygame.sndarray.array(arr)
-                arr = apply_pan(arr, pan)
-                arr = play_sample_with_release(
-                    arr,
-                    release_frame=48,        # 48 NTSC frames
-                    frame_rate=44100,
-                    duration_sec=duration
-                )
-                snd_shifted = pg.mixer.Sound(buffer=arr.astype(np.int16).tobytes())
-                vol = max(0, min(volume, 31)) / 31.0
-                snd_shifted.set_volume(vol)
-                self.channels[channel_idx].play(snd_shifted)
-            else:
-                print(f"Sample {sample} not found.")
+    def instrument(self, channel, instruments, arpeggio, volumes, tick_duration=0.5):
+        """
+        Play a sequence of offset notes (arpeggio), instruments, and volumes on a specified channel.
+        Args:
+            channel (str, int): The channel to play the sequence on ('L', 'C1', 'C2', 'R') or 0-3.
+            instruments (list): List of waveforms (wave name, index, or raw values (0-31, must be maximum 64 samples)).
+            arpeggio (list): List of note off (int).
+            volumes (list): List of volume levels (0-31).
+            tick_duration (float): Duration of each tick (how long the pointer takes to go to the next index in the lists) in seconds.
+        """
+        pass
 
     def panic(self):
+        """
+        Stop all audio playback.
+        """
         for channel in self.channels:
             channel.stop()
         self.beeper_channel.stop()
 
     def rest(self, seconds):
+        """
+        Acts as a rest (pause) in the music. Needs a rework.
+        """
         ms = int(seconds * 1000)
         pg.time.delay(ms) #Still appears to pause rendering... idk

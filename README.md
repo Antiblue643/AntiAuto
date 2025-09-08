@@ -70,12 +70,12 @@ Although, with Manjaro, the screen appears to flicker when starting it (not sure
 ## Non-Engine Tools
 - **aaiCreator.py**: Converts images/animations into functions to be used into programs (png, gif, webp).
 - **progdebug.py**: Parses programs without running them & deleting the temp.py
-- **charmap_updater.py**: Changes indices of the character map if something has been deleted (sometimes unreliable).
+- **charmap_updater.py**: Regenerates indices of the character map if something has been deleted (sometimes unreliable).
 - **audiotest.py**: Various tests for the audio system.
 
 ## Dependencies
 
-- Python 3.10+ (I'm using 3.13.1) <-- Why? Duh.
+- Python 3.10+ (I'm using 3.13.7) <-- Why? Duh.
 - Pygame 2.5.0+ (I'm using 2.6.1) <-- Why? Handling graphics.
 - Numpy 2.1.3+ (I'm using 2.1.3) <-- Why? Handling large math/array operations.
 - Pillow (For external tool) <-- Why? To manipulate images to convert to the aai format.

@@ -28,39 +28,7 @@ def midi_to_note(midi):
     o = midi // 12 - 1
     return notes[n] + str(o)
 
-def draw_waveform():
-    # Only show for non-beeper channels
-    if values[0] == 4:
-        return
-    try:
-        snd = audio.samples[values[1]]
-        if snd is None:
-            return
-        import pygame.sndarray
-        arr = pygame.sndarray.array(snd)
-        # If stereo, use left channel
-        if arr.ndim == 2:
-            arr = arr[:, 0]
-        length = len(arr)
-        width = 512  # pixels wide for waveform
-        height = 256  # pixels tall for waveform
-        x0 = 112    # left margin
-        y0 = 0     # vertical position (adjust as needed)
-        step = max(1, length // width)
-        mid_y = y0 + height // 2
-        scale = height // 2 * 0.9
-        prev_x = x0
-        prev_y = mid_y
-        for i in range(0, min(length, width * step), step):
-            x = x0 + (i // step)
-            # Normalize sample to -1..1
-            y = mid_y - int((arr[i] / 32768.0) * scale)
-            if i > 0:
-                screen.draw_line(prev_x, prev_y, x, y, 4)
-            prev_x = x
-            prev_y = y
-    except Exception as e:
-        pass  # Ignore errors for missing/invalid samples
+
 def draw_editor():
     global cursorpos, values
     y = 32
@@ -99,9 +67,9 @@ def execute_note():
     duration = values[4]
     freq = 440 * (2 ** ((midi - 69) / 12))
     if channel == 4:  # Beeper
-        beep(freq, duration)
+        audio.beep(freq, duration)
     else:
-        play_note(channel, sample, freq, volume, duration)
+        audio.play_wave(channel, sample, freq, volume, duration)
 
 def main():
     global cursorpos
@@ -109,7 +77,6 @@ def main():
     while running:
         screen.clear()
         draw_editor()
-        draw_waveform()
         screen.draw_string(16, 8, "U/D: Sel, L/R: Val, Ent: Play", 0, 23)
         screen.draw_string(16, 0, "Spcl: Exit", 0, 23)
         screen.update()
@@ -119,16 +86,16 @@ def main():
             elif key_down_event:
                 if key_UP:
                     cursorpos = (cursorpos - 1) % len(params)
-                    beep(880, 0.01)
+                    audio.beep(880, 0.01)
                 elif key_DOWN:
                     cursorpos = (cursorpos + 1) % len(params)
-                    beep(880, 0.01)
+                    audio.beep(880, 0.01)
                 elif key_RIGHT:
                     adjust_value(1)
-                    beep(1320, 0.01)
+                    audio.beep(1320, 0.01)
                 elif key_LEFT:
                     adjust_value(-1)
-                    beep(660, 0.01)
+                    audio.beep(660, 0.01)
                 elif key_RETURN:
                     execute_note()
 

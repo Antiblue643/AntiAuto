@@ -1,18 +1,21 @@
 from external import pg, Settings as s
 import re
 import random
+settings = s()
 
 # The display is a 256x192 per-pixel display.
 NATIVE_WIDTH = 256
 NATIVE_HEIGHT = 192
 
 icon = pg.image.load("resources/icon.png")
-screen = pg.display.set_mode((NATIVE_WIDTH, NATIVE_HEIGHT), pg.RESIZABLE | pg.HWSURFACE | pg.DOUBLEBUF)
+screen = pg.display.set_mode(
+    (settings.settings.get("windowSize")[0] * settings.settings.get("windowScale"), 
+     settings.settings.get("windowSize")[1] * settings.settings.get("windowScale")), 
+     pg.RESIZABLE | pg.HWSURFACE | pg.DOUBLEBUF)
 display_surface = pg.Surface((NATIVE_WIDTH, NATIVE_HEIGHT)).convert()
 back_buffer = pg.Surface((NATIVE_WIDTH, NATIVE_HEIGHT)).convert()  # Add hardware acceleration
 pg.display.set_caption("AntiAuto")
 pg.display.set_icon(icon)
-settings = s()
 
 pg.init()
 
@@ -135,7 +138,15 @@ class Display:
         return color
 
 
-    def draw_pixel(self, x, y, color=23):
+    def draw_pixel(self, position, color=23):
+        """
+        Draw a pixel on the screen.
+        Args:
+            position (tuple): (x, y) position.
+            color (int): Color index.
+        Defaults to magenta if the color is somehow invalid.
+        """
+        x, y = position
         color = self._normalize_color(color)
         if color == -1:
             return  # transparent
@@ -143,14 +154,34 @@ class Display:
             back_buffer.set_at((int(x), int(y)), self.color_cache.get(color, (255, 0, 255)))
 
 
-    def draw_line(self, x1, y1, x2, y2, color=23):
+    def draw_line(self, position1, position2, color=23, width=1):
+        """
+        Draw a line on the screen.
+        Args:
+            position1 (tuple): Start position (x1, y1).
+            position2 (tuple): End position (x2, y2).
+            color (int): Color index.
+            width (int): Line width.
+        """
+        x1, y1 = position1
+        x2, y2 = position2
         color = self._normalize_color(color)
         if color == -1:
             return
-        pg.draw.line(back_buffer, self.color_cache[color], (int(x1), int(y1)), (int(x2), int(y2)))
+        pg.draw.line(back_buffer, self.color_cache[color], (int(x1), int(y1)), (int(x2), int(y2)), int(width))
 
 
-    def draw_rect(self, x1, y1, x2, y2, color=23, outlineColor=None):
+    def draw_rect(self, position1, position2, color=23, outlineColor=None):
+        """
+        Draw a rectangle on the screen.
+        Args:
+            position1 (tuple): Top-left corner (x1, y1).
+            position2 (tuple): Bottom-right corner (x2, y2).
+            color (int): Fill color.
+            outlineColor (int, optional): Outline color.
+        """
+        x1, y1 = position1
+        x2, y2 = position2
         color = self._normalize_color(color)
         if color != -1:
             pg.draw.rect(back_buffer, self.color_cache[color],
@@ -162,22 +193,49 @@ class Display:
                             (int(x1), int(y1), int(x2) - int(x1), int(y2) - int(y1)), 1)
 
 
-    def draw_ellipse(self, x, y, radiusX, radiusY, color=23):
+    def draw_ellipse(self, position, radii, color=23, linewidth=0):
+
+        """
+        Draw an ellipse on the screen.
+        Args:
+            position (tuple): (x, y) position.
+            radii (tuple): (radiusX, radiusY) radii.
+            color (int): Color index.
+            linewidth (int): Line width. 0 for filled ellipse.
+        Set the radii to the same values for a circle.
+        """
+        x, y = position
+        radiusX, radiusY = radii
         color = self._normalize_color(color)
         if color == -1:
             return
         pg.draw.ellipse(back_buffer, self.color_cache[color],
-                        (int(x) - int(radiusX), int(y) - int(radiusY), int(radiusX) * 2, int(radiusY) * 2))
+                        (int(x) - int(radiusX), int(y) - int(radiusY), int(radiusX) * 2, int(radiusY) * 2), linewidth)
 
-
-    def draw_triangle(self, x1, y1, x2, y2, x3, y3, color=23):
+    def draw_poly(self, vertices, color=23, linewidth=0):
+        """
+        Draw a polygon on the screen.
+        Args:
+            vertices (list): List of (x, y) tuples for the polygon's vertices.
+            color (int): Color index.
+            linewidth (int): Line width. 0 for filled polygon.
+        """
         color = self._normalize_color(color)
         if color == -1:
             return
-        pg.draw.polygon(back_buffer, self.color_cache[color], [(int(x1), int(y1)), (int(x2), int(y2)), (int(x3), int(y3))])
-
+        pg.draw.polygon(back_buffer, self.color_cache[color], [(int(x), int(y)) for x, y in vertices], linewidth)
 
     def draw_char(self, x, y, char, color1=-1, color2=23):
+        """
+        Draw a character on the screen.
+        Args:
+            x (int, float): X position.
+            y (int, float): Y position.
+            char (int, tuple): Character to draw.
+            color1 (int): Background color.
+            color2 (int): Foreground color.
+        The character can be flipped horizontally with a tuple (char_index, flip).
+        """
         x = int(x)
         y = int(y)
         color1 = self._normalize_color(color1)
@@ -196,13 +254,26 @@ class Display:
                     pixel_color = font_surface.get_at((i, j))
                     if pixel_color[0] > 128:  # white (foreground)
                         if color2 != -1:
-                            self.draw_pixel(x + i, y + j, color2)
+                            self.draw_pixel((x + i, y + j), color2)
                     else:
                         if color1 != -1:
-                            self.draw_pixel(x + i, y + j, color1)
+                            self.draw_pixel((x + i, y + j), color1)
 
 
     def draw_string(self, x, y, string, default_bg=0, default_fg=23):
+        """
+        Draw a string on the screen.
+        Args:
+            x (int, float): X position.
+            y (int, float): Y position.
+            string (string): The string to draw.
+            default_bg (int): Default background color.
+            default_fg (int): Default foreground color.
+
+        You can use [bg, fg] tags to change colors, and [e] to reset to default.
+        Wrapping will occur if the text exceeds the screen width.
+        Closing a symbol id in curly braces will display an emoji.
+        """
         x = int(x)
         y = int(y)
         current_x = x
@@ -297,7 +368,16 @@ class Display:
         return flat
 
     def draw_aai(self, x, y, path="resources/logo.aai", frame=0, crop=[0,0,0,0]):
-        surf = self.get_aai_surface(path, frame, crop)
+        """
+        Draw an AAI image at the specified position.
+        Args:
+            x (int, float): X position.
+            y (int, float): Y position.
+            path (string): Path to the AAI file.
+            frame (should be int): Frame number to draw.
+            crop (4 int list): Cropping rectangle (x1, y1, x2, y2).
+        """
+        surf = self.get_aai_surface(path, int(frame), crop)
         if surf:
             back_buffer.blit(surf, (x, y))
 
@@ -354,6 +434,7 @@ class Display:
         return None
     
     def clear(self, color=0):
+        """Clear the back buffer with the specified color."""
         color = self._normalize_color(color)
         self.current_background = color
         back_buffer.fill(self.color_cache[color])
@@ -361,7 +442,7 @@ class Display:
     def ghost(self, transparency):
         """
         Ghost a frame of the screen by blending it with the previous frame.
-        Periodically clears ghosting to prevent burn-in effects.
+        \nPeriodically clears ghosting to prevent burn-in effects.
         """
         # Clear ghosting every 128 frames to prevent burn-in
         if self.frame % 128 == 1: #1 because if it's 0 it won't show the splash.
@@ -380,7 +461,7 @@ class Display:
         back_buffer.blit(current_frame, (0, 0))    # Blend current frame on top
 
     def draw_cursor(self, cursor, offsetX=0, offsetY=0):
-        """Display a custom cursor at the mouse position. Will need to have update() not have the drawCursor argument as True."""
+        """Display a custom cursor at the mouse position. Will need to have update() have the drawCursor argument as False.\nOtherwise, the default cursor will be drawn."""
         x, y = self.getMousePos()
         cursors = ['hand', 'pointer', 'hang', 'text', 'throbber', 'arrows_h', 'arrows_v']
         if cursor in cursors:
@@ -392,6 +473,12 @@ class Display:
             self.draw_aai(x + offsetX, y + offsetY, "resources/cursors/pointer.aai")
 
     def update(self, clear=False, drawCursor=True): #include clear for convenience
+        """
+        Update the display.
+        Args:
+            clear (bool): Whether to clear the display.
+            drawCursor (bool): Whether to draw the cursor. Overrides the draw_cursor() method.
+        """
         if clear:
             self.clear(0)
         # Draw the default cursor
@@ -414,11 +501,11 @@ class Display:
 
     def debug(self):
         if settings.settings.get("showFPS"):
-            self.draw_string(0, 0, self.get_fps() + " " + str(self.frame), 1, -1)
+            self.draw_string(0, 0, self.get_fps() + " " + str(self.frame), 1, 23)
         if settings.settings.get("showMousePos"):
             mx, my = self.getMousePos()
-            self.draw_line(mx, 0, mx, NATIVE_HEIGHT - 1, 12)
-            self.draw_line(0, my, NATIVE_WIDTH - 1, my, 12)
+            self.draw_line((mx, 0), (mx, NATIVE_HEIGHT - 1), 12)
+            self.draw_line((0, my), (NATIVE_WIDTH - 1, my), 12)
             self.draw_string(mx + 8, my, f"[12,22]{mx}, {my}[e]")
         if settings.settings.get("drawAAICache"):
             self.draw_string(0, 96, self.aai_cache, 1, -1)
@@ -467,6 +554,7 @@ class Display:
             self.needs_rescale = True  # Force rescale on window resize
     
     def panic(self):
+        """Clear the display and reset everything. Not to be used regularly."""
         self.clear(0)
         self.update()
 
@@ -493,10 +581,20 @@ class Display:
         # Get the state of the mouse buttons
         return pg.mouse.get_pressed()
 
+    def getRelMouse(self):
+        # Get relative mouse movement
+        return pg.mouse.get_rel()
+
     def get_fps(self, type="str"):
+        """
+        Get the current FPS.
+        Args:
+            type (str): The return type ("str" or "int").
+        """
         if type == "str":
             fps = self.clock.get_fps().__round__(2)
             return str(fps)
         elif type == "int":
             fps = self.clock.get_fps().__round__(0)
             return int(float(fps))
+        return None

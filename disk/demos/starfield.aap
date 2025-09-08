@@ -43,7 +43,7 @@ def render_stars(stars, maxZ, trail_speed=0.1):
         prev_y = int(star[4] * k_prev + originY)
 
         if 0 <= x <= 256 and 0 <= y <= 192:
-            screen.draw_line(prev_x, prev_y, x, y, star[5])
+            screen.draw_line((prev_x, prev_y), (x, y), star[5])
 
 def main():
     stars = init_stars(1024, 32)
