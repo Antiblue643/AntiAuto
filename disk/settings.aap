@@ -12,7 +12,6 @@ def getsetting(setting):
     return s
 
 def setsetting(setting, value):
-    # Add bounds checking
     if setting < 0 or setting >= len(DEFAULT_SETTINGS):
         return
     if value < 0 or value > limits[setting]:

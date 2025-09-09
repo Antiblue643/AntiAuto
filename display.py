@@ -6,13 +6,14 @@ settings = s()
 # The display is a 256x192 per-pixel display.
 NATIVE_WIDTH = 256
 NATIVE_HEIGHT = 192
-
+fs = settings.settings.get("fullscreen")
 icon = pg.image.load("resources/icon.png")
 screen = pg.display.set_mode(
     (settings.settings.get("windowSize")[0] * settings.settings.get("windowScale"), 
      settings.settings.get("windowSize")[1] * settings.settings.get("windowScale")), 
-     pg.RESIZABLE | pg.HWSURFACE | pg.DOUBLEBUF)
-display_surface = pg.Surface((NATIVE_WIDTH, NATIVE_HEIGHT)).convert()
+    pg.HWSURFACE | pg.DOUBLEBUF
+    )
+display_surface = pg.Surface((NATIVE_WIDTH, NATIVE_HEIGHT)).convert() 
 back_buffer = pg.Surface((NATIVE_WIDTH, NATIVE_HEIGHT)).convert()  # Add hardware acceleration
 pg.display.set_caption("AntiAuto")
 pg.display.set_icon(icon)

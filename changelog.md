@@ -83,3 +83,7 @@ A summary of the dev versions:
 Added an expansion system (comes with a 3d module and a somewhat working game), easier shortcuts for running (run.bat), requirements.txt, updated a lot of drawing methods (most positions use tuples now), relative mouse motion, and added lots and lots of docstrings.
 <br><b>The Sample system is being discontinued. For now, beeper is the only function that can play audio. A new waveform system in place is being developed.</b></br>
 </details>
+
+<details><summary>0.1.0β</summary>
+<h4>What's new:</h4>
+Fixed some 3d stuff and added texture support to the draw_quad method.

@@ -6,36 +6,54 @@ import random
 acc = Accelerator()
 
 chunk_data = {}
-atlas = 'disk/games/craft3d/textures/atlas.aai'
+terrain = 'disk/games/craft3d/textures/terrain.aai'
 
-blocks = { # face colors, if solid (cull neighbors), and model.
-    "grass_block": ((3, 3, 3, 18, 3, 3), True, "cube"),
-    "dirt": ((3, 3, 3, 3, 3, 3), True, "cube"),
-    "stone": ((16, 16, 16, 16, 16, 16), True, "cube"),
-    "bedrock": ((1, 1, 1, 1, 1, 1), True, "cube"),
-    "log": ((3, 3, 19, 19, 3, 3), True, "cube"),
-    "leaves": ((17, 17, 17, 17, 17, 17), True, "cube"),
-    "grass": ((10, 10), False, "cross") #Cross model, so 2 colors
+blocks = { # face texture, if solid (cull neighbors), and model.
+    "grass_block": ((1, 1, 2, 0, 1, 1), True, "cube"),
+    "dirt": ((2, 2, 2, 2, 2, 2), True, "cube"),
+    "stone": ((3, 3, 3, 3, 3, 3), True, "cube"),
+    "bedrock": ((4, 4, 4, 4, 4, 4), True, "cube"),
+    "leaves": ((5, 5, 5, 5, 5, 5), True, "cube"),
+    "grass": ((6, 6), False, "cross"), #Cross model, so 2 textures
+    "log": ((7, 7, 8, 8, 7, 7), True, "cube"),
+    "planks": ((9, 9, 9, 9, 9, 9), True, "cube"),
+    "cobblestone": ((10, 10, 10, 10, 10, 10), True, "cube"),
+    "flower": ((11, 11), False, "cross"),
+    "coal_ore": ((12, 12, 12, 12, 12, 12), True, "cube"),
+    "iron_ore": ((13, 13, 13, 13, 13, 13), True, "cube"),
+    "water": (14, False, "liquid")
 }
 
+def crop_from_idx(idx, atlasize=64, tilesize=16):
+    tiles_per_row = atlasize // tilesize
+    tx = idx % tiles_per_row
+    ty = idx // tiles_per_row
+    x = tx * tilesize
+    y = ty * tilesize
+    return [x, y, x + tilesize, y + tilesize]
+
 def cube(x, y, z, visableFaces, block_id, model="cube"):
-    colors = blocks[block_id][0]
+    texture = blocks[block_id][0]
     if model == "cube":
         if visableFaces[0]:
-            acc.draw_quad((x, y, z + 0.5), (0, 0, 0), (1, 1), colors[0], (0, 0), (0, 0, 0), True)  # Front
+            acc.draw_quad((x, y, z + 0.5), (0, 0, 0), (1, 1), 15, (0, 0, 0), True, (terrain, 0, crop_from_idx(texture[0])))  # Front
         if visableFaces[1]:
-            acc.draw_quad((x, y, z - 0.5), (0, 180, 0), (1, 1), colors[1], (0, 0), (0, 0, 0), True)  # Back
+            acc.draw_quad((x, y, z - 0.5), (0, 180, 0), (1, 1), 15, (0, 0, 0), True, (terrain, 0, crop_from_idx(texture[1])))  # Back
         if visableFaces[2]:
-            acc.draw_quad((x, y + 0.5, z), (-90, 0, 0), (1, 1), colors[2], (0, 0), (0, 0, 0), True)  # Bottom
+            acc.draw_quad((x, y + 0.5, z), (-90, 0, 0), (1, 1), 15, (0, 0, 0), True, (terrain, 0, crop_from_idx(texture[2])))  # Bottom
         if visableFaces[3]:
-            acc.draw_quad((x, y - 0.5, z), (90, 0, 0), (1, 1), colors[3], (0, 0), (0, 0, 0), True)  # Top
+            acc.draw_quad((x, y - 0.5, z), (90, 0, 0), (1, 1), 15, (0, 0, 0), True, (terrain, 0, crop_from_idx(texture[3])))  # Top
         if visableFaces[4]:
-            acc.draw_quad((x + 0.5, y, z), (0, 90, 0), (1, 1), colors[4], (0, 0), (0, 0, 0), True)  # Right
+            acc.draw_quad((x + 0.5, y, z), (0, 90, 0), (1, 1), 15, (0, 0, 0), True, (terrain, 0, crop_from_idx(texture[4])))  # Right
         if visableFaces[5]:
-            acc.draw_quad((x - 0.5, y, z), (0, -90, 0), (1, 1), colors[5], (0, 0), (0, 0, 0), True)  # Left
+            acc.draw_quad((x - 0.5, y, z), (0, -90, 0), (1, 1), 15, (0, 0, 0), True, (terrain, 0, crop_from_idx(texture[5])))  # Left
     elif model == "cross":
-        acc.draw_quad((x, y, z), (0, 45, 0), (1, 1), colors[0], (0, 0), (0, 0, 0), False)
-        acc.draw_quad((x, y, z), (0, -45, 0), (1, 1), colors[1], (0, 0), (0, 0, 0), False)
+        tex = blocks[block_id][0][0]
+        acc.draw_quad((x, y, z), (0, 45, 0), (1, 1), 15, (0, 0, 0), False, (terrain, 0, crop_from_idx(tex)))
+        acc.draw_quad((x, y, z), (0, -45, 0), (1, 1), 15, (0, 0, 0), False, (terrain, 0, crop_from_idx(tex)))
+    elif model == "liquid":
+        tex = blocks[block_id][0]
+        acc.draw_quad((x, y - 0.375, z), (90, 0, 0), (1, 1), 15, (0, 0, 0), True, (terrain, 0, crop_from_idx(tex)))
 
 world_data = {}
 
@@ -66,12 +84,15 @@ def chunk(x, z):
 
             # chance of tree on surface
             if random.random() < 0.01:
-                for (dx, dy, dz, block_type) in add_tree(x + i, 1, z + j):
-                    world_data[(x + i + dx, dy, z + j + dz)] = block_type
+                for (dx, dy, dz, block_type) in add_tree(x + i, 0, z + j):
+                    world_data[(x + i + dx, dy - 1, z + j + dz)] = block_type
 
             # chance of grass on surface
-            if random.random() < 0.05 and block_type is None:
-                world_data[(x + i, -1, z + j)] = "grass"
+            if random.random() < 0.05 and block_type != "log": #stop ignoring me bruh
+                if random.random() < 0.2:
+                    world_data[(x + i, -1, z + j)] = "flower"
+                else:
+                    world_data[(x + i, -1, z + j)] = "grass"
 
 
 def build_world(size=2):
@@ -99,7 +120,7 @@ def draw_world():
         visableFaces = []
         for npos in neighbors:
             if npos not in world_data:
-                visableFaces.append(True)   # no neighbor at all → visible
+                visableFaces.append(True)   # no neighbor at all = visible
             else:
                 n_block = world_data[npos]
                 if n_block not in blocks:
@@ -110,65 +131,6 @@ def draw_world():
 
         model = blocks[block_id][2]
         cube(cx, cy, cz, visableFaces, block_id, model=model)
-
-# ----- physics stuff -----
-def get_block_id_at(pos):
-    return world_data.get(pos, None)
-
-def is_solid_block_id(block_id: str) -> bool:
-    return block_id in blocks and blocks[block_id][1]
-
-def is_solid_at(x, y, z) -> bool:
-    pos = (int(math.floor(x)), int(math.floor(y)), int(math.floor(z)))
-    bid = get_block_id_at(pos)
-    return is_solid_block_id(bid) if bid else False
-
-
-def playerPhysics(pos, vel, camHeight, gravity):
-    # Apply gravity
-    vel[1] += gravity
-
-    # Check Y collision first (vertical movement)
-    next_y = pos[1] + vel[1]
-    feet_y = next_y + camHeight
-    
-    # Check if feet would be inside a solid block
-    feet_block_y = int(math.floor(feet_y))
-    feet_x = pos[0]  # Use current X position for Y collision check
-    feet_z = pos[2]  # Use current Z position for Y collision check
-    
-    if is_solid_at(feet_x, feet_block_y, feet_z):
-        vel[1] = 0
-    else:
-        # No collision, update Y position
-        pos[1] = next_y
-
-    # Handle horizontal movement (X and Z)
-    next_x = pos[0] + vel[0]
-    next_z = pos[2] + vel[2]
-    
-    # Check X collision
-    if not is_solid_at(next_x, feet_y, pos[2]):
-        pos[0] = next_x
-    else:
-        vel[0] = 0
-    
-    # Check Z collision    
-    if not is_solid_at(pos[0], feet_y, next_z):
-        pos[2] = next_z
-    else:
-        vel[2] = 0
-
-    # Apply friction
-    vel[0] *= 0.9
-    vel[2] *= 0.9
-    
-    # # Debug
-    # feet_block = (int(math.floor(pos[0])), int(math.floor(feet_y)), int(math.floor(pos[2])))
-    # print("Player pos:", pos, "Feet at:", (pos[0], feet_y, pos[2]), "Block:", world_data.get(feet_block))
-    vel[1] *= 0.9
-
-    return pos, vel
 
 
 def main():
@@ -181,49 +143,59 @@ def main():
     movespeed = 0.5
     sensitivity = 100
 
-    camHeight = 1.8
-
-    pos = [0.0, -15.0, 0.0]   # starting player position
-    vel = [0.0, 0.0, 0.0]
-    camHeight = 1.8
-    gravity = 0.2
+    pos = [0.0, -5.0, 0.0]   # starting player position
     movespeed = 0.2
 
-    acc.wireframe = False
+    skycolor = 21
+
+    debug = False
+
     build_world()
     running = True
+    #timeOfDay = 0
     while running:
-        screen.clear(9)
+        screen.clear(skycolor)
         draw_world()
+        # acc.draw_quad((acc.camX, acc.camY, acc.camZ), (timeOfDay, 0, 0), (32, 32), 22, (0, 0, -100), True) #no no, of course this doesn't work, because why would it?
         acc.flush()
         screen.draw_line((128, 96-4), (128, 96+4), 23)
         screen.draw_line((128+4, 96), (128-4, 96), 23)
+        if debug:
+            screen.draw_string(0, 0, [round(x, 2) if isinstance(x, float) else x for x in pos], 0, 23)
         screen.update(False, False)
+        #timeOfDay = (timeOfDay + 1) % 360
+
+        if 10 >= pos[1] >= 5:
+            skycolor = 9
+        elif 16 >= pos[1] >= 10:
+            skycolor = 2
+        else: 
+            skycolor = 21
+
         keys = obtain_keys_held()
         relMouse = screen.getRelMouse()
 
-        pos, vel = playerPhysics(pos, vel, camHeight, gravity)
-
         # Update camera position based on yaw and pitch
         if keys[keycode_w]:
-            vel[0] -= math.sin(math.radians(acc.yaw)) * movespeed
-            vel[2] += math.cos(math.radians(acc.yaw)) * movespeed
+            pos[0] -= math.sin(math.radians(acc.yaw)) * movespeed
+            pos[2] += math.cos(math.radians(acc.yaw)) * movespeed
         if keys[keycode_s]:
-            vel[0] += math.sin(math.radians(acc.yaw)) * movespeed
-            vel[2] -= math.cos(math.radians(acc.yaw)) * movespeed
+            pos[0] += math.sin(math.radians(acc.yaw)) * movespeed
+            pos[2] -= math.cos(math.radians(acc.yaw)) * movespeed
         if keys[keycode_a]:
-            vel[0] -= math.sin(math.radians(acc.yaw + 90)) * movespeed
-            vel[2] += math.cos(math.radians(acc.yaw + 90)) * movespeed
+            pos[0] -= math.sin(math.radians(acc.yaw + 90)) * movespeed
+            pos[2] += math.cos(math.radians(acc.yaw + 90)) * movespeed
         if keys[keycode_d]:
-            vel[0] -= math.sin(math.radians(acc.yaw - 90)) * movespeed
-            vel[2] += math.cos(math.radians(acc.yaw - 90)) * movespeed
+            pos[0] -= math.sin(math.radians(acc.yaw - 90)) * movespeed
+            pos[2] += math.cos(math.radians(acc.yaw - 90)) * movespeed
+
+
+        if keys[keycode_SPACE]:
+            pos[1] -= movespeed
+        if keys[keycode_LSHIFT]:
+            pos[1] += movespeed
 
         acc.camX, acc.camY, acc.camZ = pos
-
-        if keys[keycode_SPACE] and vel[1] == 0:
-            vel[1] = -1
-        #if keys[keycode_LSHIFT]:
-        #    vel[1] = 0.5
 
         if relMouse != (0, 0):
             acc.yaw -= relMouse[0] * 0.1 * (sensitivity//100)
@@ -239,7 +211,7 @@ def main():
                     acc.yaw = 0
                     build_world()
                 if key_v:
-                    acc.wireframe = not acc.wireframe
+                    debug = not debug
             if quit_event:
                 running = False
 
