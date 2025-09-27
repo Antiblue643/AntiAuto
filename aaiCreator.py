@@ -63,16 +63,20 @@ def image_to_aai(image_path):
                 if a < 128:
                     color_idx = -1
                 else:
-                    # First try to find an exact match
-                    color_idx = -1
-                    for i, pal_color in enumerate(palette):
-                        if (r, g, b) == pal_color:
-                            color_idx = i
-                            break
-                    
-                    # If no exact match found, then find closest
-                    if color_idx == -1:
-                        color_idx = closest_color_index((r, g, b), palette)
+                    #white fix
+                    if (r, g, b) == (255, 255, 255):
+                        color_idx = 23
+                    else:
+                        # First try to find an exact match
+                        color_idx = -1
+                        for i, pal_color in enumerate(palette):
+                            if (r, g, b) == pal_color:
+                                color_idx = i
+                                break
+                        
+                        # If no exact match found, then find closest
+                        if color_idx == -1:
+                            color_idx = closest_color_index((r, g, b), palette)
                         
                 data.append(color_idx)
 
@@ -85,24 +89,24 @@ def image_to_aai(image_path):
 def main():
     root = tk.Tk()
     root.withdraw()
-    file_path = filedialog.askopenfilename(
-        title="Select Image",
+    file_paths = filedialog.askopenfilenames(
+        title="Select Images",
         filetypes=[("Image Files", "*.png *.gif *.apng *.webp")]
     )
-    if not file_path:
-        print("No file selected.")
+
+    if not file_paths:
+        print("No files selected.")
         return
 
-    try:
-        aai_data = image_to_aai(file_path)
-    except Exception as e:
-        print(f"Error: {e}")
-        return
-
-    out_path = os.path.splitext(os.path.basename(file_path))[0] + ".aai"
-    with open(out_path, "w") as f:
-        f.write(aai_data)
-    print(f"AAI image written to {out_path}")
+    for file_path in file_paths:
+        try:
+            aai_data = image_to_aai(file_path)
+            out_path = os.path.splitext(os.path.basename(file_path))[0] + ".aai"
+            with open(out_path, "w") as f:
+                f.write(aai_data)
+            print(f"AAI image written to {out_path}")
+        except Exception as e:
+            print(f"Error converting {file_path}: {e}")
 
 if __name__ == "__main__":
     main()

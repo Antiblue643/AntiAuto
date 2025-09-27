@@ -27,10 +27,9 @@ if __name__ == "__main__":
                 parser.run()
             except SystemExit:
                 parser.reset()
-                audio.panic()
                 break
             except Exception as e:
-                print(f"Program error: {e}")
+                print(f"Critical program error: {e}")
             finally:
                 parser.reset()
     finally:

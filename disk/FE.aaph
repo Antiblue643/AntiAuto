@@ -54,6 +54,10 @@ def get_programs():
                     dir_items.append(["file", item, relative_path, None, "aai"])
                 elif item.endswith(".aat"):
                     dir_items.append(["file", item, relative_path, None, "aat"])
+                elif item.endswith(".aam"):
+                    dir_items.append(["file", item, relative_path, None, "aam"])
+                elif item.endswith(".vecpy"):
+                    dir_items.append(["file", item, relative_path, None, "vecpy"])
         return sorted(dir_items)
     return scan_directory()
 
@@ -89,6 +93,10 @@ def draw_list(items, selected, path="", cursor_type="pointer"):
             prefix = "{image} "
         elif len(items[i]) > 4 and items[i][4] == "aat":
             prefix = "{document} "
+        elif len(items[i]) > 4 and items[i][4] == "aam":
+            prefix = "{music_note} "
+        elif len(items[i]) > 4 and items[i][4] == "vecpy":
+            prefix = "V "
         else:
             prefix = "X"
         # Add new field to display file size
@@ -127,33 +135,36 @@ def draw_list(items, selected, path="", cursor_type="pointer"):
 
     screen.draw_string(256-(len(fullstring2) * 8)//2, 152, "{curve_br}" + "{bar_h}" * (len(fullstring2) // 2 - 2) + "{curve_bl}", color1, color2)
 
-    screen.draw_aai(216, 1, 'resources/logo.aai')
-
+    screen.draw_aai(216, 1, path='resources/logo.aai')
+    
     # Draw the cursor just before updating the screen
     screen.draw_cursor(cursor_type)
     screen.update(False, False)
+    
 
 if EmuSettings.settings.get("startupJingle"):
     for note in ["E3", "A3", "E4"]:
-        audio.beep(note, 0.5)
-        audio.rest(0.1)
+        audio.beep(note, 0.25)
+        time.sleep(0.1)
 
 if EmuSettings.settings.get("showSplash"):
     screen.clear()
     if splash == 0:
-        screen.draw_aai(0, 0, "resources/splashes/classic.aai")
+        screen.draw_aai(0, 0, path="resources/splashes/classic.aai")
     elif splash == 1:
-        screen.draw_aai(0, 0, "resources/splashes/gateway.aai")
+        screen.draw_aai(0, 0, path="resources/splashes/gateway.aai")
     elif splash == 2:
-        screen.draw_aai(0, 0, "resources/splashes/river.aai")
+        screen.draw_aai(0, 0, path="resources/splashes/river.aai")
     elif splash == 3:
-        screen.draw_aai(0, 0, "resources/splashes/steppes.aai")
-    if EmuSettings.settings.get("model") != "alpha":
+        screen.draw_aai(0, 0, path="resources/splashes/steppes.aai")
+    if EmuSettings.settings.get("model") == "ink" or EmuSettings.settings.get("model") == "ink-c":
         print('Warning, you have selected a model that is coded to refresh every 128 frames like e-ink. If you have epilepsy it is recommended to set "model" back to "alpha".')
         screen.update(False, False)
+        
         time.sleep(1.5)
     else:
         screen.update(False, False)
+        
         time.sleep(1.5)
 
 

@@ -1,21 +1,30 @@
-#parses the program to a temporary file to be used by the main script
-#It gets messy sometimes, y'know? Code generating code.
-
-
 import runpy
 import os
 import re
+import importlib.util
 
 diskpath = 'disk/'
 
+if __name__ == "__main__":
+    print("\nwrong file opened brochacho, it's main.py\n")
+
 class Parser:
     def __init__(self):
+        self.special_imports = {
+            'screen':      'from display import Display as d\ndisplay = d()',
+            'audio':       'from audio import Audio as a\naudio = a()',
+            'essentials': (
+                'import pygame as pg\n'
+                'from display import Display as d\n'
+                'screen = d()\n'
+                'from audio import Audio as a\n'
+                'audio = a()'
+            ),
+            'main':        'import pygame as pg',
+            'floppy':      'from floppy import Parser as aap\nparser = aap()'
+        }
+
         self.key = {
-            'import main': 'import pygame as pg',
-            'import screen': 'from display import Display as d\ndisplay = d()',
-            'import floppy': 'from floppy import Parser as aap\nparser = aap()',
-            'import audio': 'from audio import Audio as a\naudio = a()',
-            'import essentials': 'import pygame as pg\nfrom display import Display as d\nscreen = d()\nfrom audio import Audio as a\naudio = a()',
             'get_events': 'event in pg.event.get()',
             'quit_event': 'event.type == pg.QUIT',
             'key_down_event': 'event.type == pg.KEYDOWN',
@@ -30,34 +39,75 @@ class Parser:
             'obtain_keys_held()': 'pg.key.get_pressed()',
             'keycode_': 'pg.K_',
             'play_note': 'play_wave',
-            #Attempt some vectormaster stuffs
             'draw_dot': 'draw_pixel',
-            'tone(': 'play_wave(' #Args will need to be adjusted (replaced "tone" in stone so I had to make it with the parentheses)
-        }
-        # Special key combinations dictionary
-        self.special_keys = { #key, modifier
-            ('b', 'CTRL'): 'raise SystemExit',
-            ('F4', 'CTRL'): 'screen.clear()'
+            'tone(': 'play_wave(',
+            'screen.type': 'screen.draw_string',
         }
 
-    def parse_keys(self, filename): #take all the lines, parse them, remove comments, and put them into a temporary file
-        file_path = os.path.join(diskpath, filename)
-        if not os.path.exists(file_path):
-            raise FileNotFoundError(f"Program file not found: {file_path}")
-            
-        with open(file_path, 'r') as file:
-            lines = file.readlines()
-        
-        processed_lines = []
-        processed_lines.append('#    / \\    WARNING!!!!!!\n#   / | \\   THIS IS A TEMP FILE!\n#  /  !  \\  DO NOT EDIT!\n# /_______\\ YOUR CHANGES WILL NOT SAVE!\n\n')
-        for i, line in enumerate(lines):
+        self.special_keys = {
+            ('b', 'CTRL'): 'raise SystemExit',
+            ('F4', 'CTRL'): 'screen.clear()',
+            ('F9', 'CTRL'): 'raise ValueError("Intentional Crash")',
+        }
+        self.visited = set()
+
+    # locate custom modules on disk
+    def resolve_module(self, module_name, base_dir):
+        rel_path = module_name.replace('.', os.sep)
+        candidates = [
+            os.path.join(base_dir, rel_path),
+            os.path.join(diskpath, rel_path)
+        ]
+        for c in candidates:
+            for ext in ('.aap', '.aam'):
+                if os.path.exists(c + ext):
+                    return c + ext
+        return None
+
+    def parse_file(self, filename, base_dir):
+        if filename in self.visited:
+            return []
+        self.visited.add(filename)
+
+        with open(filename, 'r') as f:
+            lines = f.readlines()
+
+        processed = []
+        for line in lines:
             indentation = len(line) - len(line.lstrip())
             spaces = ' ' * indentation
             processed_line = line.lstrip()
 
+            # detect imports
+            m = re.match(r'^\s*import\s+([\w\.]+)\s*$', processed_line)
+            if m:
+                module_name = m.group(1)
+
+                # 1) Special shorthands (screen/audio/essentials/...)
+                if module_name in self.special_imports:
+                    processed.append(spaces + self.special_imports[module_name] + '\n')
+                    continue
+
+                # 2) custom module (search disk for .aap/.aam)
+                mod_path = self.resolve_module(module_name, os.path.dirname(filename))
+                if mod_path:
+                    processed.extend(self.parse_file(mod_path, os.path.dirname(mod_path)))
+                    continue
+
+                # 3) Native Python module
+                if importlib.util.find_spec(module_name) is not None:
+                    processed.append(spaces + processed_line.rstrip() + '\n')
+                    continue
+
+                raise FileNotFoundError(
+                    f"Module '{module_name}' not found (custom or Python)."
+                )
+
+            # normal key replacements-
             for k, v in self.key.items():
                 processed_line = processed_line.replace(k, v)
 
+            # key/mouse held macros
             processed_line = re.sub(
                 r'key_held_([a-zA-Z0-9_]+)',
                 r'pg.key.get_pressed()[pg.K_\1]',
@@ -70,38 +120,54 @@ class Parser:
             )
 
             if processed_line.lstrip().startswith('#'):
-                processed_line = ''
-            
-            processed_line = processed_line.rstrip()
+                continue
 
-            # If this is the event loop, insert special key logic right after
+            # special key injection
             if 'for event in pg.event.get()' in processed_line:
-                processed_lines.append(spaces + processed_line + '\n')
-                
-                # Generate special key handlers
-                for (key, modifier), action in self.special_keys.items():
-                    special = spaces + '    ' + (
-                        f'if event.type == pg.KEYDOWN and '
-                        f'event.key == pg.K_{key} and '
-                        f'pg.key.get_mods() & pg.KMOD_{modifier}:\n'
-                        f'{spaces}        {action}\n'
+                processed.append(spaces + processed_line + '\n')
+                for (key, mod), action in self.special_keys.items():
+                    processed.append(
+                        f"{spaces}    if event.type == pg.KEYDOWN and "
+                        f"event.key == pg.K_{key} and "
+                        f"pg.key.get_mods() & pg.KMOD_{mod}:\n"
+                        f"{spaces}        {action}\n"
                     )
-                    processed_lines.append(special)
-                    processed_lines.append(spaces + '    pg.event.set_grab(True)\n')
-            elif processed_line:
-                processed_lines.append(spaces + processed_line + '\n')
+                    processed.append(spaces + '    pg.event.set_grab(True)\n')
+            else:
+                processed.append(spaces + processed_line.rstrip() + '\n')
 
-        # Write all processed lines to temp.py
-        with open('temp.py', 'w') as file:
-            file.writelines(processed_lines)
+        return processed
+
+    def parse_keys(self, filename):
+        file_path = os.path.join(diskpath, filename)
+        if not os.path.exists(file_path):
+            raise FileNotFoundError(f"Program file not found: {file_path}")
+
+        self.visited.clear()
+        header = [
+            '#    / \\    WARNING!!!!!!\n',
+            '#   / | \\   THIS IS A TEMP FILE!\n',
+            '#  /  !  \\  DO NOT EDIT!\n',
+            '# /_______\\ YOUR CHANGES WILL NOT SAVE!\n\n'
+        ]
+        processed = header + self.parse_file(file_path, os.path.dirname(file_path))
+        with open('temp.py', 'w') as f:
+            f.writelines(processed)
+
     def reset(self):
         if os.path.exists('temp.py'):
             os.remove('temp.py')
+
     def run(self):
         if os.path.exists('temp.py'):
             try:
                 runpy.run_path('temp.py')
             except Exception as e:
-                print(f"#!#!#!#!# Program error: {e} #!#!#!#!#")
+                try:
+                    self.parse_keys('crash.aaph')
+                    self.run()
+                    print(f"An error has occurred: {e}")
+                except Exception:
+                    print("Umm, the crash handler also failed... How did you get here?")
         else:
-            print('No file to run or the temp file was not found at ' + diskpath + 'temp.py for some reason. (How???)')
+            print('No temp.py to run.')

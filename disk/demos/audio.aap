@@ -6,7 +6,7 @@ import essentials
 params = ['Channel', 'Sample', 'Note', 'Volume', 'Duration']
 channels = ['L', 'C1', 'C2', 'R', 'Beeper']
 values = [0, 0, 60, 31, 0.5]  # Channel, Sample, Note (MIDI), Volume, Duration
-param_ranges = [(0, 4), (0, 28), (36, 84), (0, 31), (0.05, 2.0)]
+param_ranges = [(0, 4), (-1, 7), (36, 84), (0, 31), (0.05, 2.0)]
 cursorpos = 0
 
 def validate_values():
@@ -80,6 +80,7 @@ def main():
         screen.draw_string(16, 8, "U/D: Sel, L/R: Val, Ent: Play", 0, 23)
         screen.draw_string(16, 0, "Spcl: Exit", 0, 23)
         screen.update()
+        
         for get_events:
             if quit_event:
                 running = False

@@ -16,10 +16,10 @@ BASE25 = "0123456789ABCDEFGHIJKLMNO"  # O = transparent (-1)
 
 # Canvas modes
 canvas_modes = {
-    "normal": {"w": 192, "h": 128},
-    "compact": {"w": 64, "h": 64}
+    "wide": {"w": 192, "h": 128},
+    "square": {"w": 64, "h": 64}
 }
-active_mode = "normal"
+active_mode = "wide"
 
 # Canvas area
 CANVAS_X = 8
@@ -27,8 +27,8 @@ CANVAS_Y = 48
 CANVAS_W = canvas_modes[active_mode]["w"]
 CANVAS_H = canvas_modes[active_mode]["h"]
 canvas_buffers = {
-    "normal": [[0 for _ in range(192)] for _ in range(128)],
-    "compact": [[0 for _ in range(64)] for _ in range(64)]
+    "wide": [[0 for _ in range(192)] for _ in range(128)],
+    "square": [[0 for _ in range(64)] for _ in range(64)]
 }
 canvas = canvas_buffers[active_mode]
 
@@ -127,9 +127,9 @@ def save_canvas():
     
     # Success feedback
     audio.beep("G4", 0.1)
-    audio.rest(0.2)
+    time.sleep(0.2)
     audio.beep("B4", 0.1)
-    audio.rest(0.2)
+    time.sleep(0.2)
 
 def load_canvas(initial=False):
     global canvas, CANVAS_W, CANVAS_H
@@ -170,17 +170,18 @@ def load_canvas(initial=False):
         canvas_buffers[active_mode] = canvas
         if not initial:
             audio.beep("F4", 0.1)
-            audio.rest(0.2)
+            time.sleep(0.2)
             audio.beep("F4", 0.1)
-            audio.rest(0.2)
+            time.sleep(0.2)
         screen.clear()
     except Exception as e:
         print(f"Load failed: {e}")
-        audio.play_wave("C1", 0x12, "C4", 31, 0.5)
+        audio.play_wave("C1", -1, "C4", 31, 0.5)
+        
 
 def toggle_canvas():
     global active_mode, canvas, CANVAS_W, CANVAS_H
-    active_mode = "compact" if active_mode == "normal" else "normal"
+    active_mode = "square" if active_mode == "wide" else "wide"
     CANVAS_W = canvas_modes[active_mode]["w"]
     CANVAS_H = canvas_modes[active_mode]["h"]
     canvas = canvas_buffers[active_mode]
@@ -222,6 +223,7 @@ def main():
     tool = TOOL_PEN
     prev_x = None
     prev_y = None
+    undo_pushed = False  # Track if undo was pushed for current drag
 
     while running:
         mouse_x, mouse_y = screen.getMousePos()
@@ -253,41 +255,58 @@ def main():
                 sel = get_palette_at(mouse_x, mouse_y)
                 if sel is not None:
                     color = sel
+                    undo_pushed = False
                     continue
                 tsel = get_tool_at(mouse_x, mouse_y)
                 if tsel is not None:
                     tool = tsel
+                    undo_pushed = False
                     continue
                 bsel = get_button_at(mouse_x, mouse_y)
                 if bsel == "save":
                     save_canvas()
+                    undo_pushed = False
                     continue
                 elif bsel == "load":
                     load_canvas()
+                    undo_pushed = False
                     continue
                 elif bsel == "toggle":
                     toggle_canvas()
+                    undo_pushed = False
                     continue
 
                 if in_canvas(mouse_x, mouse_y):
-                    # --- PUSH UNDO BEFORE CHANGING CANVAS ---
-                    push_undo()
+                    # --- PUSH UNDO ONLY ON FIRST DRAG ---
+                    if not undo_pushed:
+                        push_undo()
+                        undo_pushed = True
                     cx = mouse_x - CANVAS_X
                     cy = mouse_y - CANVAS_Y
                     if tool == TOOL_PEN:
                         if prev_x is not None and prev_y is not None:
-                            dx = mouse_x - prev_x
-                            dy = mouse_y - prev_y
-                            steps = max(abs(dx), abs(dy))
-                            if steps > 0:
-                                for i in range(steps + 1):
-                                    ix = int(prev_x + dx * i / steps) - CANVAS_X
-                                    iy = int(prev_y + dy * i / steps) - CANVAS_Y
-                                    if 0 <= ix < CANVAS_W and 0 <= iy < CANVAS_H:
-                                        canvas[iy][ix] = color
-                            else:
-                                if 0 <= cx < CANVAS_W and 0 <= cy < CANVAS_H:
-                                    canvas[cy][cx] = color
+                            # Bresenham's line algorithm, faster
+                            x0, y0 = prev_x - CANVAS_X, prev_y - CANVAS_Y
+                            x1, y1 = cx, cy
+
+                            dx = abs(x1 - x0)
+                            dy = abs(y1 - y0)
+                            sx = 1 if x0 < x1 else -1
+                            sy = 1 if y0 < y1 else -1
+                            err = dx - dy
+
+                            while True:
+                                if 0 <= x0 < CANVAS_W and 0 <= y0 < CANVAS_H:
+                                    canvas[y0][x0] = color
+                                if x0 == x1 and y0 == y1:
+                                    break
+                                e2 = 2 * err
+                                if e2 > -dy:
+                                    err -= dy
+                                    x0 += sx
+                                if e2 < dx:
+                                    err += dx
+                                    y0 += sy
                         else:
                             if 0 <= cx < CANVAS_W and 0 <= cy < CANVAS_H:
                                 canvas[cy][cx] = color
@@ -298,7 +317,7 @@ def main():
                                 ey = cy + oy
                                 if 0 <= ex < CANVAS_W and 0 <= ey < CANVAS_H:
                                     canvas[ey][ex] = 0
-                    elif tool == TOOL_FILL:  # Now fill tool
+                    elif tool == TOOL_FILL:
                         if 0 <= cx < CANVAS_W and 0 <= cy < CANVAS_H:
                             target_color = canvas[cy][cx]
                             flood_fill(cx, cy, target_color, color)
@@ -307,8 +326,10 @@ def main():
                 else:
                     prev_x = None
                     prev_y = None
+                    undo_pushed = False
             else:
                 prev_x = None
                 prev_y = None
+                undo_pushed = False
 
 main()

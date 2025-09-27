@@ -37,7 +37,7 @@ def main():
             if j < len(data) - i - 1:
                 if data[j] > data[j + 1]:
                     data[j], data[j + 1] = data[j + 1], data[j]
-                    audio.play_wave("C1", 0x1A, 880 / data[j], 31, 0.05)
+                    audio.play_wave("C1", 2, 880 / data[j], 31, 0.05)
                 j += 1
             else:
                 j = 0
@@ -45,8 +45,8 @@ def main():
                 if i >= len(data):
                     sorting = False
                     for note in ["E4", "A4", "E5"]:
-                        audio.play_wave("C1", 0x1A, note, 31, 0.5)
-                        audio.rest(0.1)
+                        audio.play_wave("C1", 2, note, 31, 0.5)
+                        time.sleep(0.1)
         
         screen.clear()
         
@@ -70,5 +70,6 @@ def main():
         screen.draw_string(4, 4, "Bubble Sort - Space: Shuffle", 0, 23)
         time.sleep(0.05 if sorting else 0) 
         screen.update()
+        
 
 main()

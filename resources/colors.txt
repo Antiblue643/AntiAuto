@@ -21,7 +21,7 @@ c5c5c5 #16, light gray
 aaf044 #18, light green
 ffcf96 #19, tan
 00ffff #20, cyan
-c0ffee #21, light cyan
+c0ffee #21, mint
 ffff00 #22, yellow
 ffffff #23, white
 
@@ -40,3 +40,22 @@ e09f84 #2, orange
 4a5f45 #3, green
 bfc3ff #4, blue
 ffe3d6 #5, white
+
+# CGA COLORS
+
+000000 #0, black
+0000aa #1, blue
+00aa00 #2, green
+00aaaa #3, cyan
+aa0000 #4, red
+aa00aa #5, magenta
+aa5500 #6, brown
+aaaaaa #7, light gray
+555555 #8, dark gray
+5555ff #9, light blue
+55ff55 #10, light green
+55ffff #11, light cyan
+ff5555 #12, light red
+ff55ff #13, light magenta
+ffff55 #14, yellow
+ffffff #15, white

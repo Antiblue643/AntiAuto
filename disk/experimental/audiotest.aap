@@ -2,13 +2,13 @@ import essentials
 
 def main():
     running = True
+    audio.play_aam("disk/experimental/test.aam")
     while running:
         screen.clear()
-        #screen stuff goes here
+        audio.update_all_sequences()
         screen.update()
         for get_events:
             if quit_event:
                 running = False
-            #key stuff goes here
 
 main()

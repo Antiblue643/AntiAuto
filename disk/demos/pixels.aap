@@ -1,13 +1,11 @@
-# pixels.aap
-
 #AntiAuto programs use a Python-like language
-
-#Although it is most definitely not compatible with the Vectormaster syntax, some functions can be swapped for their Antiauto equivalents.
 
 #it uses most of the same syntax as Python, but it uses the Antiauto's custom functions instead of Python's.
 
-import essentials #neccessary unless you want to add modules manually for some reason.
-import random #Other modules are optional.
+import essentials
+#^ neccessary unless you want to add modules manually for some reason. 
+# Also no comments are allowed next to [custom/system] import statements.
+import random #Other modules are optional. You can put comments next to python imports though.
 
 screen.clear(0) #clear screen with color 0 (black)
 screen.draw_string(0, 0, "Pixels Demo!", -1, 7) #draws a string (background color -1 (transparent), foreground color 7 (blue)) at the top of the screen. You can also use [bg, fg]Text[e] too.

@@ -87,3 +87,9 @@ Added an expansion system (comes with a 3d module and a somewhat working game), 
 <details><summary>0.1.0β</summary>
 <h4>What's new:</h4>
 Fixed some 3d stuff and added texture support to the draw_quad method.
+</details>
+
+<details><summary>0.1.1α</summary>
+<h4>What's new:</h4>
+Updated the aai creator to be able to process multiple images, and also fixed the white color. Removed unnecessary imports, added more audio functionality (still experimental,) added nested imports, crash handling, dev tools, a CGA palette, removed the deltarune battle, and removed craft3d (will come back as a separate project, and will still be for the AntiAuto)
+</details>

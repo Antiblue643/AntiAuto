@@ -1,0 +1,174 @@
+import essentials
+from dev_stuff import Disassembler as D
+import random
+import time
+
+dis = D()
+
+files = [
+    'disk/FE.aaph',
+    'main.py',
+    'display.py',
+    'audio.py',
+    'expansions.py',
+    'floppy.py',
+    'external.py',
+    'disk/paint.aap',
+    'disk/notepad.aap',
+    'disk/crash.aaph',
+    'disk/bios.aaph',
+    'resources/chars.txt',
+    'resources/logo.aai',
+    'resources/colors.txt',
+    'resources/chars.png',
+    'resources/cursors/pointer.aai',
+    'resources/splashes/classic.aai',
+    'README.md',
+    'LICENSE',
+    'changelog.md',
+    'resources/waves.json',
+    'disk/settings.aap',
+    '.gitignore',
+    'pixelorama/chars.pxo'
+]
+
+fchoice = random.choice(files)
+
+try:
+    with open(fchoice, 'r') as f:
+        pass
+except Exception as e:
+    print(f"Error trying to open {fchoice}: {e}")
+    fchoice = 'disk/crash.aaph'
+binary = dis.disassemble(fchoice)
+
+playing_sequence = False
+current_byte_playing = None
+current_byte_data = None
+scroll_string = ""
+
+def draw_binary(highlight_byte=None):
+    global current_byte_data
+    width = 256
+    height = 192 - 56
+    x0, y0 = 0, 56
+    max_pixels = width * height
+    data = binary[:max_pixels]
+    for i, bit in enumerate(data):
+        x = x0 + (i % width)
+        y = y0 + (i // width)
+        byte_index = i // 8
+        if highlight_byte is not None and byte_index == highlight_byte and bit == '1':
+            color = 20
+        elif bit == '1':
+            color = 23
+        else:
+            color = 0 if ((i // 8)) % 2 == 0 else 4
+        screen.draw_pixel((x, y), color)
+
+def draw_things():
+    global scroll_string
+    screen.clear(2)
+    screen.draw_string(0, 0, "If you're seeing this message,", -1, 23)
+    screen.draw_string(0, 8, "the system has crashed. {sad}", -1, 23)
+    screen.draw_string(0, 16, "Please restart the system.", -1, 23)
+    screen.draw_string(32, 24, "Press [-1,6]Ctrl-B[e] to exit.", -1, 23)
+    screen.draw_string(0, 32, "While you're here, here's", -1, 23)
+    if current_byte_playing is not None:
+        byte_bits = binary[current_byte_playing*8 : current_byte_playing*8+8]
+        current_char = dis.reassemble(byte_bits)
+        # Only add if new byte
+        if not scroll_string or (scroll_string and (not scroll_string.endswith(current_char))):
+            scroll_string += current_char
+        # Truncate to last 32 chars
+        if len(scroll_string) > 32:
+            scroll_string = scroll_string[-32:]
+        screen.draw_string(0, 48, f"{byte_bits} [-1,15]{scroll_string}[e]", -1, 20)
+    else:
+        screen.draw_string(0, 48, "", -1, 20)
+    screen.draw_string(0, 40, f"{fchoice}!", -1, 23)  
+    draw_binary(highlight_byte=current_byte_playing)
+    screen.update(False, False)
+
+def start_sequence():
+    global playing_sequence, current_byte_playing
+    # Prepare sequence data
+    notes = []
+    waves = []
+    volumes = []
+    notels = []
+    for i in range(0, len(binary), 8):
+        byte = binary[i:i+8]
+        if len(byte) < 8:
+            byte = byte.ljust(8, '0')
+        # Convert bits to wave (list of 8 ints, 0 or 31)
+        wave = [31 if bit == '1' else 0 for bit in byte]
+        notes.append("B3")
+        waves.append(wave)
+        volumes.append(16)
+        notels.append(0.05)  # short note
+    seq_data = {
+        "notes": notes,
+        "waves": waves,
+        "volumes": volumes,
+        "notels": notels
+    }
+    audio.sequence("C1", seq_data, (300, [6], 1), loop=False)
+    playing_sequence = True
+    current_byte_playing = 0
+
+def update_sequence():
+    global playing_sequence, current_byte_playing, scroll_string
+    if playing_sequence:
+        audio.sequence_update(["C1"])
+        idx = audio.sequence_idxs[1]
+        if idx < len(binary) // 8:
+            # Only reset scroll_string if starting over
+            if idx == 0 and current_byte_playing is not None:
+                scroll_string = ""
+            current_byte_playing = idx
+        else:
+            playing_sequence = False
+            current_byte_playing = None
+
+def main():
+    global fchoice, binary, playing_sequence, string
+    running = True
+    audio.beep("C5", 0.5)
+    while running:
+        draw_things()
+        if screen.frame % 256 == 0:
+            binary = dis.disassemble(fchoice)
+
+        if playing_sequence:
+            update_sequence()
+        for get_events:
+            if quit_event:
+                running = False
+            if key_down_event:
+                if key_SPACE:
+                    fchoice = random.choice(files)
+                    binary = dis.disassemble(fchoice)
+                    audio.beep('E4', 0.03)
+                if key_e and not playing_sequence:
+                    start_sequence()
+                    string = ''
+
+main()
+
+"""
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~!~!~~~~~~~~~~~~~~~~~~~~~~~~~~~~~!~!~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~!~!~~~~~~~~~~~~~~~~~~~~~~~~~~~~~!~!~~~~~~
+~~~~~~~~~~~~~~~~~~~~~~~!~!~~~~~~~~~~~~~~~~~~~~~~~~~~~~~!
+~!~~~~~~~~~~~~~~~~~~~~~~~~~~~!~~~~~!~~~~~~~~~~~~~~~~~~~~
+~~~~~!~~~~~!~~~~~~~~~~~~~~~~~~~~~~~~~!~~~~~!~~~~~~~~~~~~~~~~~~~~
+~~~~~!~~~~~!~~~~~~~~~~~~~~~~~~~~~~~~~!~~~~~!~~~~~~~~~~~~
+~~~~~~~~~~~~~~!!!!!~~~~~~~~~~~~~~~~~~~~~~~~~~~!!!!!~~~~~
+~~~~~~~~~~~~~~~~~~~~~~!!!!!~~~~~~~~~~~~~~~~~~~~~~~~~~~!!!!!~
+~~~~~~~~~~~~~~~~~~~~~~~~~~!!!!!~~~~~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+"""

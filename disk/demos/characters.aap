@@ -11,7 +11,7 @@ def get_flipped_variant(char_map, idx):
 def get_char_name(char_map, idx):
     for name, value in char_map.items():
         if isinstance(value, tuple) and value[0] == idx and value[1] is False:
-            return name
+            return name.replace("_", " ").title()
     return str(idx)
 
 
@@ -48,10 +48,10 @@ def char_norm(mouse_pos=None):
         # Try to find the name for the flipped variant
         for n, v in screen.char_map.items():
             if v == hovered_flipped:
-                flip_name = n
+                flip_name = n.replace("_", " ").title()
                 break
         else:
-            flip_name = str(hovered_flipped[0]) + "_flipped"
+            flip_name = str(hovered_flipped[0]).replace("_", " ").title()
         screen.draw_string(0, 168, f"[18,9]{flip_name}[e]")
 
 def main():

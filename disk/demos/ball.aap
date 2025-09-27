@@ -35,17 +35,17 @@ class Ball:
         if self.x < 0:
             self.x = 0
             self.vx = -self.vx * 0.8
-            audio.beep(random.randint(80, 110), 0.05)
+            audio.play_wave(1, 0, random.randint(80, 220), 31, 0.05)
         if self.x > 248:
             self.x = 248
             self.vx = -self.vx * 0.8
-            audio.beep(random.randint(80, 110), 0.05)
+            audio.play_wave(1, 0, random.randint(80, 220), 31, 0.05)
 
         # Bounce off ground
         if self.y >= ground_y:
             self.y = ground_y
             self.vy = -self.vy * 0.5
-            audio.beep(random.randint(80, 110), 0.05)
+            audio.play_wave(1, 0, random.randint(80, 220), 31, 0.05)
             if abs(self.vy) < 1:
                 self.vy = 0
                 self.bouncing = False
@@ -97,20 +97,21 @@ def main():
         screen.draw_string(0, 0, "Press SPACE to throw!", 0, 5)
         screen.draw_string(0, 8, str(BALL_CHAR) if BALL_CHAR != (screen.char_map['ball'])[0] else "", 0, 5)
         screen.update()
+        
 
         # Update all balls and remove old ones
         for b in balls[:]:
             b.update(dt)
             if b.age > b.lifetime:
                 balls.remove(b)
-                audio.play_wave("C1", 17, 880, 15, 0.1)
+                audio.play_wave("C1", -1, 880, 15, 0.1)
             elif b.age > (b.lifetime - 0.1): #show pop (dither3) sprite right before removing
                 b.character = screen.char_map['dither3'][0]
 
         # Handle ball-ball collisions
         handle_collisions(balls)
 
-        audio.rest(0.016)
+        time.sleep(0.016)
         for get_events:
             if quit_event:
                 running = False

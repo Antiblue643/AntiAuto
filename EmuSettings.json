@@ -5,7 +5,7 @@
     "showMousePos": false,
     "showSplash": true,
     "startupJingle": true,
-    "version": "0.1.0",
+    "version": "0.1.1",
     "useBios": true,
     "model": "alpha",
     "drawAAICache": false,

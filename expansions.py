@@ -1,10 +1,13 @@
 # Additional class(es) that mimic(s) the expansion port in the fantasy hardware.
 
 from display import Display
-from external import *
+from external import * #numpy (np), pygame (pg), json
 import math
 
 screen = Display()
+
+if __name__ == "__main__":
+    print("\nwrong file opened brochacho, it's main.py\n")
 
 class Accelerator:
     def __init__(self):
@@ -15,10 +18,13 @@ class Accelerator:
         self.pitch = 0  # X rotation
         self.yaw = 0    # Y rotation
         self.roll = 0   # Z rotation (optional)
-        self.near_clip = 0.1
+        self.near_clip = 0.001
         self.render_queue = []
         self.wireframe = False
         self.aai_cache = {}
+        self.framerate_cap = 60
+        self.clock = pg.time.Clock()
+        self.renderwindow = (0, 0, 256, 192) #crop the whole 3d rendering area to this size (x, y, w, h)
 
     def load_aai(self, path, frame=0, crop=[0,0,0,0]):
         key = (path, frame, tuple(crop))
@@ -140,29 +146,54 @@ class Accelerator:
         rx, ry, rz = [math.radians(r) for r in rotation]
         rotated = []
         for x, y, z in corners:
+            # Apply rotations in order: Z (roll), Y (yaw), X (pitch)
             x, y = x * math.cos(rz) - y * math.sin(rz), x * math.sin(rz) + y * math.cos(rz)
             x, z = x * math.cos(ry) + z * math.sin(ry), -x * math.sin(ry) + z * math.cos(ry)
             y, z = y * math.cos(rx) - z * math.sin(rx), y * math.sin(rx) + z * math.cos(rx)
+            #this is just about what I know about 3d math
             x += position[0] + offset[0]
             y += position[1] + offset[1]
             z += position[2] + offset[2]
             rotated.append((x, y, z))
+        
         if cull_backface:
+            # Calculate face normal using proper winding order
+            # Use vertices 0, 1, 2 to determine face orientation
             v1 = (rotated[1][0] - rotated[0][0], rotated[1][1] - rotated[0][1], rotated[1][2] - rotated[0][2])
             v2 = (rotated[2][0] - rotated[0][0], rotated[2][1] - rotated[0][1], rotated[2][2] - rotated[0][2])
+            
+            # Cross product: v1 × v2
             normal = (
                 v1[1] * v2[2] - v1[2] * v2[1],
                 v1[2] * v2[0] - v1[0] * v2[2],
                 v1[0] * v2[1] - v1[1] * v2[0],
             )
-            view_dir = (
-                rotated[0][0] - self.camX,
-                rotated[0][1] - self.camY,
-                rotated[0][2] - self.camZ,
+            
+            # Calculate face center
+            face_center = (
+                sum(v[0] for v in rotated) / 4,
+                sum(v[1] for v in rotated) / 4,
+                sum(v[2] for v in rotated) / 4,
             )
+            
+            # View direction: from face center to camera
+            view_dir = (
+                self.camX - face_center[0],
+                self.camY - face_center[1],
+                self.camZ - face_center[2],
+            )
+            
+            # Dot product: if positive, face is pointing toward camera (visible)
+            # if negative, face is pointing away from camera (should be culled)
             dot_product = sum(n * v for n, v in zip(normal, view_dir))
-            if dot_product >= 0:
+            
+            # Cull faces pointing away from camera (dot product < 0)
+            if dot_product < 0:
                 return
+            
+        #Wikipedia & stack overflow helped a lot
+
+        # Transform to camera space and project to screen
         proj_verts = []
         depth_vals = []
         for vx, vy, vz in rotated:
@@ -171,6 +202,8 @@ class Accelerator:
             if proj:
                 proj_verts.append(proj)
                 depth_vals.append(tz)
+        
+        # Partial clipping??
         if len(proj_verts) == 4:
             avg_depth = sum(depth_vals) / len(depth_vals)
             if texturedata:
@@ -183,7 +216,7 @@ class Accelerator:
 
     def blit_affine(self, tex_array, src_tri, dst_tri):
         """
-        Rasterize affine triangle using a general-purpose scanline approach.
+        Rasterize affine triangle with clipping to self.renderwindow. blahhh
         tex_array: HxW numpy array of palette indices (-1 transparent).
         src_tri: [(u,v),...] in texture space (pixels).
         dst_tri: [(x,y),...] in screen space.
@@ -192,101 +225,117 @@ class Accelerator:
         verts = sorted(zip(dst_tri, src_tri), key=lambda p: p[0][1])
         (p1, t1), (p2, t2), (p3, t3) = verts
 
-        if p1[1] == p3[1]:
-            return # A degenerate triangle with no height
+        # Check if triangle has any area
+        if abs(p1[1] - p3[1]) < 0.001:
+            return  # Degenerate triangle. Stupid ahh triangle. Stewpid!!!
 
-        # Calculate bounding box for the triangle
-        y_min = max(0, int(p1[1]))
-        y_max = min(191, int(p3[1]))
+        # Get render window bounds
+        rx, ry, rw, rh = self.renderwindow
+        x_min_win, x_max_win = rx, rx + rw - 1
+        y_min_win, y_max_win = ry, ry + rh - 1
 
-        # Pre-calculate inverse slopes for the edges
-        if p2[1] != p1[1]:
+        # Calculate bounding box but clip to render window vertically
+        y_min = max(y_min_win, int(math.floor(p1[1])))
+        y_max = min(y_max_win, int(math.ceil(p3[1])))
+
+        # Skip if completely off-screen vertically
+        if y_min > y_max:
+            return
+
+        # Pre-calc inverse slopes for the edges
+        if abs(p2[1] - p1[1]) > 0.001:
             dx1_dy = (p2[0] - p1[0]) / (p2[1] - p1[1])
             du1_dy = (t2[0] - t1[0]) / (p2[1] - p1[1])
             dv1_dy = (t2[1] - t1[1]) / (p2[1] - p1[1])
         else:
-            dx1_dy, du1_dy, dv1_dy = 0, 0, 0
+            dx1_dy = du1_dy = dv1_dy = 0
 
-        if p3[1] != p1[1]:
+        if abs(p3[1] - p1[1]) > 0.001:
             dx2_dy = (p3[0] - p1[0]) / (p3[1] - p1[1])
             du2_dy = (t3[0] - t1[0]) / (p3[1] - p1[1])
             dv2_dy = (t3[1] - t1[1]) / (p3[1] - p1[1])
         else:
-            dx2_dy, du2_dy, dv2_dy = 0, 0, 0
+            dx2_dy = du2_dy = dv2_dy = 0
 
-        # Rasterize top half
-        for y in range(y_min, min(int(p2[1]), y_max)):
-            if y < 0: continue
-            
-            x_start = p1[0] + (y - p1[1]) * dx1_dy
-            x_end = p1[0] + (y - p1[1]) * dx2_dy
-            u_start = t1[0] + (y - p1[1]) * du1_dy
-            v_start = t1[1] + (y - p1[1]) * dv1_dy
-            u_end = t1[0] + (y - p1[1]) * du2_dy
-            v_end = t1[1] + (y - p1[1]) * dv2_dy
+        # Rasterize top half (p1 -> p2)
+        y_split = min(int(math.ceil(p2[1])), y_max)
+        for y in range(y_min, y_split):
+            dy = y - p1[1]
+            x_start = p1[0] + dy * dx1_dy
+            x_end   = p1[0] + dy * dx2_dy
+            u_start = t1[0] + dy * du1_dy
+            v_start = t1[1] + dy * dv1_dy
+            u_end   = t1[0] + dy * du2_dy
+            v_end   = t1[1] + dy * dv2_dy
 
             if x_start > x_end:
                 x_start, x_end = x_end, x_start
                 u_start, u_end = u_end, u_start
                 v_start, v_end = v_end, v_start
-            
-            dx = x_end - x_start
-            if dx != 0:
-                du_dx = (u_end - u_start) / dx
-                dv_dx = (v_end - v_start) / dx
-            else:
-                du_dx, dv_dx = 0, 0
 
-            u, v = u_start, v_start
-            for x in range(max(0, int(x_start)), min(255, int(x_end) + 1)):
-                ui, vi = int(u), int(v)
-                if 0 <= ui < w_tex and 0 <= vi < h_tex:
-                    color = tex_array[vi, ui]
-                    if color != -1:
-                        screen.draw_pixel((x, y), color)
-                u += du_dx
-                v += dv_dx
+            x_min = max(x_min_win, int(math.ceil(x_start)))
+            x_max = min(x_max_win, int(math.floor(x_end)))
+            if x_min <= x_max:
+                dx = x_end - x_start
+                if abs(dx) > 0.001:
+                    du_dx = (u_end - u_start) / dx
+                    dv_dx = (v_end - v_start) / dx
+                    u = u_start + (x_min - x_start) * du_dx
+                    v = v_start + (x_min - x_start) * dv_dx
+                    for x in range(x_min, x_max + 1):
+                        ui, vi = int(u), int(v)
+                        if 0 <= ui < w_tex and 0 <= vi < h_tex:
+                            color = tex_array[vi, ui]
+                            if color != -1:
+                                screen.draw_pixel((x, y), color)
+                        u += du_dx
+                        v += dv_dx
 
-        # Pre-calculate inverse slopes for the second part of the triangle (from p2 to p3)
-        if p3[1] != p2[1]:
+        # Slopes for bottom half (p2 -> p3)
+        if abs(p3[1] - p2[1]) > 0.001:
             dx3_dy = (p3[0] - p2[0]) / (p3[1] - p2[1])
             du3_dy = (t3[0] - t2[0]) / (p3[1] - p2[1])
             dv3_dy = (t3[1] - t2[1]) / (p3[1] - p2[1])
         else:
-            dx3_dy, du3_dy, dv3_dy = 0, 0, 0
+            dx3_dy = du3_dy = dv3_dy = 0
 
-        # Rasterize bottom half
-        for y in range(int(p2[1]), y_max):
-            if y < 0: continue
-            
-            x_start = p2[0] + (y - p2[1]) * dx3_dy
-            x_end = p1[0] + (y - p1[1]) * dx2_dy
-            u_start = t2[0] + (y - p2[1]) * du3_dy
-            v_start = t2[1] + (y - p2[1]) * dv3_dy
-            u_end = t1[0] + (y - p1[1]) * du2_dy
-            v_end = t1[1] + (y - p1[1]) * dv2_dy
+        # Rasterize bottom half (p2 -> p3)
+        y_start_bottom = max(y_split, y_min)
+        for y in range(y_start_bottom, y_max + 1):
+            dy_p2 = y - p2[1]
+            dy_p1 = y - p1[1]
+            x_start = p2[0] + dy_p2 * dx3_dy
+            x_end   = p1[0] + dy_p1 * dx2_dy
+            u_start = t2[0] + dy_p2 * du3_dy
+            v_start = t2[1] + dy_p2 * dv3_dy
+            u_end   = t1[0] + dy_p1 * du2_dy
+            v_end   = t1[1] + dy_p1 * dv2_dy
 
             if x_start > x_end:
                 x_start, x_end = x_end, x_start
                 u_start, u_end = u_end, u_start
                 v_start, v_end = v_end, v_start
 
-            dx = x_end - x_start
-            if dx != 0:
-                du_dx = (u_end - u_start) / dx
-                dv_dx = (v_end - v_start) / dx
-            else:
-                du_dx, dv_dx = 0, 0
-                
-            u, v = u_start, v_start
-            for x in range(max(0, int(x_start)), min(255, int(x_end) + 1)):
-                ui, vi = int(u), int(v)
-                if 0 <= ui < w_tex and 0 <= vi < h_tex:
-                    color = tex_array[vi, ui]
-                    if color != -1:
-                        screen.draw_pixel((x, y), color)
-                u += du_dx
-                v += dv_dx
+            # Ahh muy estudioso
+
+            x_min = max(x_min_win, int(math.ceil(x_start)))
+            x_max = min(x_max_win, int(math.floor(x_end)))
+            if x_min <= x_max:
+                dx = x_end - x_start
+                if abs(dx) > 0.001:
+                    du_dx = (u_end - u_start) / dx
+                    dv_dx = (v_end - v_start) / dx
+                    u = u_start + (x_min - x_start) * du_dx
+                    v = v_start + (x_min - x_start) * dv_dx
+                    for x in range(x_min, x_max + 1):
+                        ui, vi = int(u), int(v)
+                        if 0 <= ui < w_tex and 0 <= vi < h_tex:
+                            color = tex_array[vi, ui]
+                            if color != -1:
+                                screen.draw_pixel((x, y), color)
+                        u += du_dx
+                        v += dv_dx
+
 
     def clip_polygon_near(self, vertices, near):
         if not vertices:
@@ -316,17 +365,29 @@ class Accelerator:
         return clipped
 
     def flush(self):
+        rx, ry, rw, rh = self.renderwindow
+        x_min, y_min = rx, ry
+        x_max, y_max = rx + rw - 1, ry + rh - 1
+
         for obj in sorted(self.render_queue, key=lambda o: o[1], reverse=True):
             kind = obj[0]
             if kind == "point":
                 _, _, (sx, sy), color = obj
-                screen.draw_pixel((sx, sy), color)
+                if x_min <= sx <= x_max and y_min <= sy <= y_max:
+                    screen.draw_pixel((sx, sy), color)
+
             elif kind == "line":
                 _, _, (sx1, sy1), (sx2, sy2), color, width = obj
+                if (sx1 > x_max and sx2 > x_max) or (sx1 < x_min and sx2 < x_min) or \
+                (sy1 > y_max and sy2 > y_max) or (sy1 < y_min and sy2 < y_min):
+                    continue  # fully outside
                 screen.draw_line((sx1, sy1), (sx2, sy2), color, width)
+
             elif kind == "poly":
                 _, _, verts, color = obj
-                screen.draw_poly(verts, color, 1 if self.wireframe else 0)
+                if any(x_min <= vx <= x_max and y_min <= vy <= y_max for vx, vy in verts):
+                    screen.draw_poly(verts, color, 1 if self.wireframe else 0)
+
             elif kind == "affine_quad":
                 _, _, verts, tex = obj
                 (tw, th, arr) = tex
@@ -337,5 +398,8 @@ class Accelerator:
                 for tri in tris:
                     dst = tri[0:3]
                     src = tri[3]
-                    self.blit_affine(arr, src, dst)
+                    # only draw if any vertex is inside viewport
+                    if any(x_min <= vx <= x_max and y_min <= vy <= y_max for vx, vy in dst):
+                        self.blit_affine(arr, src, dst)
         self.render_queue.clear()
+        self.clock.tick(self.framerate_cap)

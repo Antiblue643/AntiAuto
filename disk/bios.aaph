@@ -83,8 +83,12 @@ def main():
     testfilesystem()
     time.sleep(2)
     if parser:
-        parser.parse_keys("FE.aaph")
-        parser.run()
+        try:
+            parser.parse_keys("FE.aaph")
+            parser.run()
+        except Exception as e:
+            parser.parse_keys('crash.aaph')
+            parser.run()
     while running:
         screen.clear(9)
         screen.draw_string(0, 0, text, -1, 18)

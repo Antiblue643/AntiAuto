@@ -1,7 +1,9 @@
 from external import pg, Settings as s
 import re
-import random
 settings = s()
+
+if __name__ == "__main__":
+    print("\nwrong file opened brochacho, it's main.py\n")
 
 # The display is a 256x192 per-pixel display.
 NATIVE_WIDTH = 256
@@ -92,7 +94,8 @@ class Display:
             palette_map = {
                 'alpha': '# ALPHA COLORS',
                 'ink': '# INK COLORS',
-                'ink-c': '# INK-C COLORS'
+                'ink-c': '# INK-C COLORS',
+                'cga': '# CGA COLORS'
             }
             header = palette_map.get(settings.settings.get("model"))
             if not header:
@@ -132,14 +135,14 @@ class Display:
             quit("No colors file found!")
 
 
-    def _normalize_color(self, color):
+    def _normalize_color(self, color: int):
         """Wrap real colors into palette range; keep -1 as transparent."""
         if color >= 0:
             return color % len(self.colors)
         return color
 
 
-    def draw_pixel(self, position, color=23):
+    def draw_pixel(self, position: tuple, color: int = 23):
         """
         Draw a pixel on the screen.
         Args:
@@ -155,7 +158,7 @@ class Display:
             back_buffer.set_at((int(x), int(y)), self.color_cache.get(color, (255, 0, 255)))
 
 
-    def draw_line(self, position1, position2, color=23, width=1):
+    def draw_line(self, position1: tuple, position2: tuple, color: int = 23, width: int = 1):
         """
         Draw a line on the screen.
         Args:
@@ -172,7 +175,7 @@ class Display:
         pg.draw.line(back_buffer, self.color_cache[color], (int(x1), int(y1)), (int(x2), int(y2)), int(width))
 
 
-    def draw_rect(self, position1, position2, color=23, outlineColor=None):
+    def draw_rect(self, position1: tuple, position2: tuple, color: int = 23, outlineColor: int = None):
         """
         Draw a rectangle on the screen.
         Args:
@@ -194,7 +197,7 @@ class Display:
                             (int(x1), int(y1), int(x2) - int(x1), int(y2) - int(y1)), 1)
 
 
-    def draw_ellipse(self, position, radii, color=23, linewidth=0):
+    def draw_ellipse(self, position: tuple, radii: tuple, color: int = 23, linewidth: int = 0):
 
         """
         Draw an ellipse on the screen.
@@ -213,7 +216,7 @@ class Display:
         pg.draw.ellipse(back_buffer, self.color_cache[color],
                         (int(x) - int(radiusX), int(y) - int(radiusY), int(radiusX) * 2, int(radiusY) * 2), linewidth)
 
-    def draw_poly(self, vertices, color=23, linewidth=0):
+    def draw_poly(self, vertices: list, color: int = 23, linewidth: int = 0):
         """
         Draw a polygon on the screen.
         Args:
@@ -231,7 +234,7 @@ class Display:
         Draw a character on the screen.
         Args:
             x (int, float): X position.
-            y (int, float): Y position.
+            y (int, float): Y Position.
             char (int, tuple): Character to draw.
             color1 (int): Background color.
             color2 (int): Foreground color.
@@ -266,7 +269,7 @@ class Display:
         Draw a string on the screen.
         Args:
             x (int, float): X position.
-            y (int, float): Y position.
+            y (int, float): Y Position.
             string (string): The string to draw.
             default_bg (int): Default background color.
             default_fg (int): Default foreground color.
@@ -368,70 +371,83 @@ class Display:
                 i += 1
         return flat
 
-    def draw_aai(self, x, y, path="resources/logo.aai", frame=0, crop=[0,0,0,0]):
+    def draw_aai(self, x, y, data=None, path=None, frame=0, crop=[0,0,0,0]):
         """
         Draw an AAI image at the specified position.
         Args:
             x (int, float): X position.
-            y (int, float): Y position.
-            path (string): Path to the AAI file.
+            y (int, float): Y Position.
+            data (str or list, optional): Raw AAI data as string or list of lines.
+            path (str, optional): Path to AAI file. Used if data is None.
             frame (should be int): Frame number to draw.
             crop (4 int list): Cropping rectangle (x1, y1, x2, y2).
         """
-        surf = self.get_aai_surface(path, int(frame), crop)
+        surf = self.get_aai_surface(data=data, path=path, frame=int(frame), crop=crop)
         if surf:
             back_buffer.blit(surf, (x, y))
 
-    def get_aai_surface(self, path, frame=0, crop=[0,0,0,0]):
-        """Decode and cache an AAI image as a Surface."""
-        cache_key = (path, frame, tuple(crop))  # Make crop hashable for cache key
+    def get_aai_surface(self, data=None, path=None, frame=0, crop=[0,0,0,0]):
+        """
+        Decode and cache an AAI image as a Surface.
+        Args:
+            data (str, list, or None): Raw AAI data as string or list of lines.
+            path (str, optional): Path to AAI file. Used if data is None.
+            frame (int): Frame number.
+            crop (list): Cropping rectangle.
+        """
+        # Use the data string/list or path as the cache key
+        cache_key = (str(data) if data is not None else str(path), frame, tuple(crop))
         if cache_key in self.aai_cache:
             return self.aai_cache[cache_key]
 
         try:
-            with open(path, "r") as f:
-                lines = f.read().strip().splitlines()
-            if lines[0].startswith("aai_") and "x" in lines[0]:
+            lines = None
+            if data is not None:
+                if isinstance(data, str):
+                    lines = data.strip().splitlines()
+                elif isinstance(data, list):
+                    lines = data
+                else:
+                    raise ValueError("AAI data must be a string or list of lines.")
+            elif path is not None:
+                with open(path, "r", encoding="utf-8") as f:
+                    lines = [line.rstrip('\n') for line in f]
+            else:
+                raise ValueError("No AAI data or path provided.")
+
+            if lines and lines[0].startswith("aai_") and "x" in lines[0]:
                 dim = lines[0].split("_")[1].split("x")
                 w, h = int(dim[0]), int(dim[1])
                 frames = lines[1:]
                 chosen_frame = frames[frame % len(frames)]
                 flat = self.rle_decode(chosen_frame)
-                # Adjust length to match dimensions
                 max_pixels = w * h
                 if len(flat) > max_pixels:
                     flat = flat[:max_pixels]
                 elif len(flat) < max_pixels:
                     flat.extend([-1] * (max_pixels - len(flat)))
-                
-                # Create initial surface
                 surf = pg.Surface((w, h), flags=pg.SRCALPHA).convert_alpha()
                 for i, color in enumerate(flat):
                     color = self._normalize_color(color)
                     if color != -1:
                         xi, yi = (i % w), (i // w)
                         surf.set_at((xi, yi), self.color_cache.get(color, (255, 0, 255)))
-                
-                # Apply cropping if specified
                 if crop != [0,0,0,0]:
                     x1, y1, x2, y2 = crop
-                    # Ensure coordinates are within bounds
                     x1 = max(0, min(x1, w))
                     y1 = max(0, min(y1, h))
                     x2 = max(0, min(x2, w))
                     y2 = max(0, min(y2, h))
-                    
-                    if x2 > x1 and y2 > y1:  # Only crop if valid rectangle
+                    if x2 > x1 and y2 > y1:
                         crop_width = x2 - x1
                         crop_height = y2 - y1
                         cropped_surf = pg.Surface((crop_width, crop_height), flags=pg.SRCALPHA).convert_alpha()
                         cropped_surf.blit(surf, (0, 0), (x1, y1, crop_width, crop_height))
                         surf = cropped_surf
-
                 self.aai_cache[cache_key] = surf
                 return surf
         except Exception as e:
-            print(f"Error loading AAI file: {e}")
+            print(f"Error loading AAI data: {e}")
         return None
     
     def clear(self, color=0):
@@ -467,11 +483,11 @@ class Display:
         cursors = ['hand', 'pointer', 'hang', 'text', 'throbber', 'arrows_h', 'arrows_v']
         if cursor in cursors:
             if cursor == "throbber":
-                self.draw_aai(x + offsetX, y + offsetY, "resources/cursors/throbber.aai", (int(self.frame // 16)))
+                self.draw_aai(x + offsetX, y + offsetY, path="resources/cursors/throbber.aai", frame=int(self.frame // 16))
             else:
-                self.draw_aai(x + offsetX, y + offsetY, f"resources/cursors/{cursor}.aai")
+                self.draw_aai(x + offsetX, y + offsetY, path=f"resources/cursors/{cursor}.aai")
         else:
-            self.draw_aai(x + offsetX, y + offsetY, "resources/cursors/pointer.aai")
+            self.draw_aai(x + offsetX, y + offsetY, path="resources/cursors/pointer.aai")
 
     def update(self, clear=False, drawCursor=True): #include clear for convenience
         """
@@ -485,8 +501,8 @@ class Display:
         # Draw the default cursor
         if drawCursor:
             cx, cy = self.getMousePos()
-            self.draw_aai(cx, cy, "resources/cursors/pointer.aai")
-        if settings.settings.get("model") != "alpha":
+            self.draw_aai(cx, cy, path="resources/cursors/pointer.aai")
+        if settings.settings.get("model") == "ink" or settings.settings.get("model") == "ink-c":
             self.clock.tick(15) #suffer
             self.ghost(0.2)
         else:

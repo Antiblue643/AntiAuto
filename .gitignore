@@ -53,7 +53,12 @@ __pycache__/
 temp.py
 notepadSave.aat
 chars_fixed.txt
-saved_compact.aai
-saved_normal.aai
-spriteOutput.txt
-devCanvasTest.py
+saved_wide.aai
+saved_square.aai
+
+#Dev stuff
+dev_disassemble.py
+disk/games/dev/
+dis_output.bin
+random.aai
+out.gif

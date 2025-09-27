@@ -44,15 +44,16 @@ def main():
                     text = ""
                 else:
                     text += event.unicode
-                    audio.play_wave("C1", 0x13, random.randint(220, 440), 31, 0.01)
+                    audio.play_wave("C1", -1, random.randint(220, 440), 31, 0.01)
         if "gaster" in text.lower():
             for i in range(5):
-                audio.play_wave("C1", 0x1b, 880/(i + 1), 7, 0.025)
-                audio.rest(0.05)
+                audio.play_wave("C1", 5, 880/(i + 1), 7, 0.025)
+                time.sleep(0.05)
             raise SystemExit()
 
         screen.draw_string(4, 4, text + "_", -1, 0)
         screen.update()
+        
 
 main()
 

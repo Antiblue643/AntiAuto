@@ -48,6 +48,7 @@ def main():
         screen.draw_string(0, 0, f"{scorep1}::{scorep2}", -1, 9)
         screen.update()
         
+        
         ballx += dirx
         bally += diry
         if ballx < 4:

@@ -42,14 +42,13 @@ Although, with Manjaro, the screen appears to flicker when starting it (not sure
 - **Pixels**: Random Pixels
 - **Audio**: Audio tester/visualizer
 - **Ball**: A bouncy ball/bubble physics demo
-- **Deltarune Battle**: An Undertale/Deltarune-style battle system demo
 - **Sorting**: A sorting algorithm demo
 - *And more!*
 
 ### System Programs
 - **Notepad**: A Notepad
 - **Paint**: A paint program
-- **Browser**: A very bad browser
+- **Settings** The system settings
 - **FE**: The (hidden) File explorer
 - **Template**: A (hidden) starting template for the main structure of programs (for more info read the comments in the pixels demo, or look at how floppy.py handles things 🤷‍♂️)
 
@@ -68,10 +67,10 @@ Although, with Manjaro, the screen appears to flicker when starting it (not sure
 5. Use Escape to navigate back or exit the file browser
 
 ## Non-Engine Tools
-- **aaiCreator.py**: Converts images/animations into functions to be used into programs (png, gif, webp).
+- **aaiCreator.py**: Converts images/animations into compatible images to be used into programs (png, gif, webp).
 - **progdebug.py**: Parses programs without running them & deleting the temp.py
 - **charmap_updater.py**: Regenerates indices of the character map if something has been deleted (sometimes unreliable).
-- **audiotest.py**: Various tests for the audio system.
+- **dev_stuff**: Some tools for developers like aai randomizing and reconstruction.
 
 ## Dependencies
 
@@ -85,6 +84,8 @@ Although, with Manjaro, the screen appears to flicker when starting it (not sure
 - Mouse: Navigate
 - Escape: Back/Exit
 - Ctrl+B: Force quit running program
+- Ctrl+F4: Emergency screen clear
+- Ctrl+F9: Crash the system
 
 ## The future?
 I'm hoping to add more features to the AntiAuto, such as:
@@ -94,7 +95,7 @@ I'm hoping to add more features to the AntiAuto, such as:
 - Extra settings
 - Better GUI
 - Better OS
-- Possible rewrite in java?
+- Possible rewrite in some other language?
 
 ## Contributions
 I'd really appreciate feedback/suggestions, as well as tips/ways to fix my terrible code, or just some programs you've created to show off!
