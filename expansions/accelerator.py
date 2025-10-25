@@ -1,16 +1,14 @@
-# Additional class(es) that mimic(s) the expansion port in the fantasy hardware.
+#The Accelerator extension.
 
-from display import Display
 from external import * #numpy (np), pygame (pg), json
 import math
-
-screen = Display()
 
 if __name__ == "__main__":
     print("\nwrong file opened brochacho, it's main.py\n")
 
 class Accelerator:
-    def __init__(self):
+    def __init__(self, screen):
+        self.screen = screen
         self.camX = 0
         self.camY = 0
         self.camZ = 0
@@ -25,6 +23,12 @@ class Accelerator:
         self.framerate_cap = 60
         self.clock = pg.time.Clock()
         self.renderwindow = (0, 0, 256, 192) #crop the whole 3d rendering area to this size (x, y, w, h)
+        import numpy as _np
+        self._np = np
+        rx, ry, rw, rh = self.renderwindow
+        self.zbuffer = _np.full((rh, rw), float("inf"), dtype=_np.float32)
+
+    #Idk what happened to the docstrings sorry
 
     def load_aai(self, path, frame=0, crop=[0,0,0,0]):
         key = (path, frame, tuple(crop))
@@ -33,20 +37,20 @@ class Accelerator:
         try:
             with open(path, "r") as f:
                 lines = f.read().strip().splitlines()
-            if not lines or not lines[0].startswith("aai_"):
+            if not lines or not lines[0].startswith("pdaai_"):
                 return None
             header = lines[0]
             dim = header.split("_")[1].split("x")
             w, h = int(dim[0]), int(dim[1])
             frames = lines[1:]
             chosen = frames[frame % len(frames)]
-            BASE25 = "0123456789ABCDEFGHIJKLMNO"
+            BASE64 = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz+/="
             flat = []
             i = 0
             while i + 1 < len(chosen):
-                raw = BASE25.index(chosen[i])
-                color = -1 if raw == 24 else raw
-                run = BASE25.index(chosen[i + 1])
+                raw = BASE64.index(chosen[i])
+                color = -1 if raw == 64 else raw  # 63 is '=' in BASE64, used as transparent
+                run = BASE64.index(chosen[i + 1])
                 flat.extend([color] * run)
                 i += 2
             max_pixels = w * h
@@ -200,142 +204,105 @@ class Accelerator:
             tx, ty, tz = self.camera_transform(vx, vy, vz)
             proj = self.perspective_transform(tx, ty, tz)
             if proj:
-                proj_verts.append(proj)
+                sx, sy = proj
+                proj_verts.append(((sx, sy), tz))  # store (screen coords), camera-space z
                 depth_vals.append(tz)
-        
-        # Partial clipping??
         if len(proj_verts) == 4:
             avg_depth = sum(depth_vals) / len(depth_vals)
             if texturedata:
                 path, frame, crop = texturedata
                 tex = self.load_aai(path, frame, crop)
                 if tex:
-                    self.render_queue.append(("affine_quad", avg_depth, proj_verts, tex))
+                    # Enqueue a perspective textured quad (pass per-vertex (x,y,z))
+                    verts_with_z = [(p[0][0], p[0][1], p[1]) for p in proj_verts]  # list of (x,y,z)
+                    self.render_queue.append(("perspective_quad", avg_depth, verts_with_z, tex))
             else:
-                self.render_queue.append(("poly", avg_depth, proj_verts, color))
+                verts = [v[0] for v in proj_verts]
+                self.render_queue.append(("poly", avg_depth, verts, color))
 
-    def blit_affine(self, tex_array, src_tri, dst_tri):
+    def blit_perspective_triangle(self, tex_array, src_tri_uv, dst_tri_xy_z):
         """
-        Rasterize affine triangle with clipping to self.renderwindow. blahhh
-        tex_array: HxW numpy array of palette indices (-1 transparent).
-        src_tri: [(u,v),...] in texture space (pixels).
-        dst_tri: [(x,y),...] in screen space.
+        tex_array: H x W numpy array of palette indices (-1 transparent).
+        src_tri_uv: [(u,v), (u,v), (u,v)] in texture pixel coordinates.
+        dst_tri_xy_z: [(x,y,z), ...] in screen coords with camera-space z (positive forward).
+        Uses barycentric coordinates with perspective correction (interpolate u/z, v/z and 1/z).
+        Updates per-pixel zbuffer and writes pixels via self.screen.draw_pixel((x,y), color).
         """
         h_tex, w_tex = tex_array.shape
-        verts = sorted(zip(dst_tri, src_tri), key=lambda p: p[0][1])
-        (p1, t1), (p2, t2), (p3, t3) = verts
+        # Unpack
+        (x0, y0, z0), (x1, y1, z1), (x2, y2, z2) = dst_tri_xy_z
+        (u0, v0), (u1, v1), (u2, v2) = src_tri_uv
 
-        # Check if triangle has any area
-        if abs(p1[1] - p3[1]) < 0.001:
-            return  # Degenerate triangle. Stupid ahh triangle. Stewpid!!!
-
-        # Get render window bounds
+        # Bounding box (integer) clipped to render window
         rx, ry, rw, rh = self.renderwindow
-        x_min_win, x_max_win = rx, rx + rw - 1
-        y_min_win, y_max_win = ry, ry + rh - 1
-
-        # Calculate bounding box but clip to render window vertically
-        y_min = max(y_min_win, int(math.floor(p1[1])))
-        y_max = min(y_max_win, int(math.ceil(p3[1])))
-
-        # Skip if completely off-screen vertically
-        if y_min > y_max:
+        x_min = max(rx, int(math.floor(min(x0, x1, x2))))
+        x_max = min(rx + rw - 1, int(math.ceil(max(x0, x1, x2))))
+        y_min = max(ry, int(math.floor(min(y0, y1, y2))))
+        y_max = min(ry + rh - 1, int(math.ceil(max(y0, y1, y2))))
+        if x_min > x_max or y_min > y_max:
             return
 
-        # Pre-calc inverse slopes for the edges
-        if abs(p2[1] - p1[1]) > 0.001:
-            dx1_dy = (p2[0] - p1[0]) / (p2[1] - p1[1])
-            du1_dy = (t2[0] - t1[0]) / (p2[1] - p1[1])
-            dv1_dy = (t2[1] - t1[1]) / (p2[1] - p1[1])
-        else:
-            dx1_dy = du1_dy = dv1_dy = 0
+        # Precompute edge function denominator (triangle area * 2)
+        denom = ( (y1 - y2)*(x0 - x2) + (x2 - x1)*(y0 - y2) )
+        if abs(denom) < 1e-6:
+            return  # degenerate
 
-        if abs(p3[1] - p1[1]) > 0.001:
-            dx2_dy = (p3[0] - p1[0]) / (p3[1] - p1[1])
-            du2_dy = (t3[0] - t1[0]) / (p3[1] - p1[1])
-            dv2_dy = (t3[1] - t1[1]) / (p3[1] - p1[1])
-        else:
-            dx2_dy = du2_dy = dv2_dy = 0
+        inv_denom = 1.0 / denom
 
-        # Rasterize top half (p1 -> p2)
-        y_split = min(int(math.ceil(p2[1])), y_max)
-        for y in range(y_min, y_split):
-            dy = y - p1[1]
-            x_start = p1[0] + dy * dx1_dy
-            x_end   = p1[0] + dy * dx2_dy
-            u_start = t1[0] + dy * du1_dy
-            v_start = t1[1] + dy * dv1_dy
-            u_end   = t1[0] + dy * du2_dy
-            v_end   = t1[1] + dy * dv2_dy
+        # Precompute u_over_z, v_over_z, and one_over_z at vertices
+        # (Note: z is camera-space Z; ensure non-zero)
+        # If z <= 0 (behind camera or too close), bail out for safety on that vertex - we'll still rasterize if barycentric avoids it.
+        # But best to skip triangles with any z <= self.near_clip (clipping should have handled most).
+        one_over_z0 = 1.0 / z0
+        one_over_z1 = 1.0 / z1
+        one_over_z2 = 1.0 / z2
 
-            if x_start > x_end:
-                x_start, x_end = x_end, x_start
-                u_start, u_end = u_end, u_start
-                v_start, v_end = v_end, v_start
+        uoz0 = u0 * one_over_z0
+        uoz1 = u1 * one_over_z1
+        uoz2 = u2 * one_over_z2
+        voz0 = v0 * one_over_z0
+        voz1 = v1 * one_over_z1
+        voz2 = v2 * one_over_z2
 
-            x_min = max(x_min_win, int(math.ceil(x_start)))
-            x_max = min(x_max_win, int(math.floor(x_end)))
-            if x_min <= x_max:
-                dx = x_end - x_start
-                if abs(dx) > 0.001:
-                    du_dx = (u_end - u_start) / dx
-                    dv_dx = (v_end - v_start) / dx
-                    u = u_start + (x_min - x_start) * du_dx
-                    v = v_start + (x_min - x_start) * dv_dx
-                    for x in range(x_min, x_max + 1):
-                        ui, vi = int(u), int(v)
-                        if 0 <= ui < w_tex and 0 <= vi < h_tex:
-                            color = tex_array[vi, ui]
-                            if color != -1:
-                                screen.draw_pixel((x, y), color)
-                        u += du_dx
-                        v += dv_dx
+        # Convenience references
+        np = self._np
+        zbuf = self.zbuffer  # shape (rh, rw) row-major
+        # For indexing into zbuffer: idx_x = x - rx, idx_y = y - ry
 
-        # Slopes for bottom half (p2 -> p3)
-        if abs(p3[1] - p2[1]) > 0.001:
-            dx3_dy = (p3[0] - p2[0]) / (p3[1] - p2[1])
-            du3_dy = (t3[0] - t2[0]) / (p3[1] - p2[1])
-            dv3_dy = (t3[1] - t2[1]) / (p3[1] - p2[1])
-        else:
-            dx3_dy = du3_dy = dv3_dy = 0
-
-        # Rasterize bottom half (p2 -> p3)
-        y_start_bottom = max(y_split, y_min)
-        for y in range(y_start_bottom, y_max + 1):
-            dy_p2 = y - p2[1]
-            dy_p1 = y - p1[1]
-            x_start = p2[0] + dy_p2 * dx3_dy
-            x_end   = p1[0] + dy_p1 * dx2_dy
-            u_start = t2[0] + dy_p2 * du3_dy
-            v_start = t2[1] + dy_p2 * dv3_dy
-            u_end   = t1[0] + dy_p1 * du2_dy
-            v_end   = t1[1] + dy_p1 * dv2_dy
-
-            if x_start > x_end:
-                x_start, x_end = x_end, x_start
-                u_start, u_end = u_end, u_start
-                v_start, v_end = v_end, v_start
-
-            # Ahh muy estudioso
-
-            x_min = max(x_min_win, int(math.ceil(x_start)))
-            x_max = min(x_max_win, int(math.floor(x_end)))
-            if x_min <= x_max:
-                dx = x_end - x_start
-                if abs(dx) > 0.001:
-                    du_dx = (u_end - u_start) / dx
-                    dv_dx = (v_end - v_start) / dx
-                    u = u_start + (x_min - x_start) * du_dx
-                    v = v_start + (x_min - x_start) * dv_dx
-                    for x in range(x_min, x_max + 1):
-                        ui, vi = int(u), int(v)
-                        if 0 <= ui < w_tex and 0 <= vi < h_tex:
-                            color = tex_array[vi, ui]
-                            if color != -1:
-                                screen.draw_pixel((x, y), color)
-                        u += du_dx
-                        v += dv_dx
-
+        # Rasterize
+        for py in range(y_min, y_max + 1):
+            for px in range(x_min, x_max + 1):
+                # Compute barycentric coordinates using edge functions
+                w0 = ( (y1 - y2)*(px - x2) + (x2 - x1)*(py - y2) ) * inv_denom
+                w1 = ( (y2 - y0)*(px - x2) + (x0 - x2)*(py - y2) ) * inv_denom
+                w2 = 1.0 - w0 - w1
+                # If pixel is inside triangle (allow top/left rule: >=0)
+                if w0 >= -1e-6 and w1 >= -1e-6 and w2 >= -1e-6:
+                    # Interpolate 1/z, u/z, v/z
+                    one_over_z = w0 * one_over_z0 + w1 * one_over_z1 + w2 * one_over_z2
+                    if one_over_z <= 0:
+                        continue
+                    z = 1.0 / one_over_z
+                    # Depth test: smaller z is closer (camera looks down +Z)
+                    idx_x = px - rx
+                    idx_y = py - ry
+                    if idx_x < 0 or idx_x >= rw or idx_y < 0 or idx_y >= rh:
+                        continue
+                    if z >= zbuf[idx_y, idx_x]:
+                        continue
+                    # interpolate tex coords
+                    u_over_z = w0 * uoz0 + w1 * uoz1 + w2 * uoz2
+                    v_over_z = w0 * voz0 + w1 * voz1 + w2 * voz2
+                    u = u_over_z * z
+                    v = v_over_z * z
+                    ui = int(u)
+                    vi = int(v)
+                    if 0 <= ui < w_tex and 0 <= vi < h_tex:
+                        color = int(tex_array[vi, ui])  # palette index (possibly -1)
+                        if color != -1:
+                            # Pass to display; update zbuffer
+                            self.screen.draw_pixel((px, py), color)
+                            zbuf[idx_y, idx_x] = z
 
     def clip_polygon_near(self, vertices, near):
         if not vertices:
@@ -369,37 +336,44 @@ class Accelerator:
         x_min, y_min = rx, ry
         x_max, y_max = rx + rw - 1, ry + rh - 1
 
+        # Reset zbuffer each frame (far away)
+        self.zbuffer.fill(float("inf"))
+
         for obj in sorted(self.render_queue, key=lambda o: o[1], reverse=True):
             kind = obj[0]
             if kind == "point":
                 _, _, (sx, sy), color = obj
                 if x_min <= sx <= x_max and y_min <= sy <= y_max:
-                    screen.draw_pixel((sx, sy), color)
+                    self.screen.draw_pixel((sx, sy), color)
 
             elif kind == "line":
                 _, _, (sx1, sy1), (sx2, sy2), color, width = obj
                 if (sx1 > x_max and sx2 > x_max) or (sx1 < x_min and sx2 < x_min) or \
                 (sy1 > y_max and sy2 > y_max) or (sy1 < y_min and sy2 < y_min):
                     continue  # fully outside
-                screen.draw_line((sx1, sy1), (sx2, sy2), color, width)
+                self.screen.draw_line((sx1, sy1), (sx2, sy2), color, width)
 
             elif kind == "poly":
                 _, _, verts, color = obj
                 if any(x_min <= vx <= x_max and y_min <= vy <= y_max for vx, vy in verts):
-                    screen.draw_poly(verts, color, 1 if self.wireframe else 0)
+                    self.screen.draw_poly(verts, color, 1 if self.wireframe else 0)
 
-            elif kind == "affine_quad":
-                _, _, verts, tex = obj
+            elif kind == "perspective_quad":
+                _, _, verts_with_z, tex = obj
                 (tw, th, arr) = tex
+                # Split quad into two triangles, but provide per-vertex z values
+                # verts_with_z: list of (x,y,z) in order [v0, v1, v2, v3]
                 tris = [
-                    (verts[0], verts[1], verts[2], [(0,0),(tw,0),(tw,th)]),
-                    (verts[0], verts[2], verts[3], [(0,0),(tw,th),(0,th)])
+                    ( (verts_with_z[0], verts_with_z[1], verts_with_z[2]),
+                      ( (0,0), (tw,0), (tw,th) ) ),
+                    ( (verts_with_z[0], verts_with_z[2], verts_with_z[3]),
+                      ( (0,0), (tw,th), (0,th) ) ),
                 ]
-                for tri in tris:
-                    dst = tri[0:3]
-                    src = tri[3]
-                    # only draw if any vertex is inside viewport
-                    if any(x_min <= vx <= x_max and y_min <= vy <= y_max for vx, vy in dst):
-                        self.blit_affine(arr, src, dst)
+                for dst_verts, src_uvs in tris:
+                    # Quick viewport check
+                    if any(x_min <= v[0] <= x_max and y_min <= v[1] <= y_max for v in dst_verts):
+                        # call perspective-correct triangle blitter
+                        self.blit_perspective_triangle(arr, src_uvs, dst_verts)
+
         self.render_queue.clear()
         self.clock.tick(self.framerate_cap)

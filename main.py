@@ -7,14 +7,10 @@ from pathlib import Path
 project_dir = Path(__file__).parent #no idea if this stuff works
 sys.path.append(str(project_dir))
 
-from display import Display as d
 from floppy import Parser as p
-from audio import Audio as a
 from external import Settings as s
 
-screen = d()
 parser = p()
-audio = a()
 settings = s()
 
 if __name__ == "__main__":

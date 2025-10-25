@@ -62,3 +62,7 @@ disk/games/dev/
 dis_output.bin
 random.aai
 out.gif
+
+#Virtual Environments
+venv
+.venv

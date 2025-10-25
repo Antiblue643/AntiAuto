@@ -41,9 +41,12 @@ def apply_pan(arr, pan):
         return stereo
     return arr
 
+if pg.mixer.get_init() is not None:
+    pg.mixer.quit()
+pg.mixer.init(frequency=44100, size=-16, channels=2, allowedchanges=0)
+
 class Audio:
     def __init__(self):
-        pg.mixer.init(frequency=44100, size=-16, channels=2)
         self.channels = [pg.mixer.Channel(i) for i in range(CHANNELS)]
         self.beeper_channel = pg.mixer.Channel(CHANNELS)  # 5th channel for beeper
         self.waves = {}
@@ -84,11 +87,11 @@ class Audio:
             duration (float): The duration of the beep sound in seconds.
         """
         freq = self.note_to_freq(freq)
-        # Generate 1-bit square wave for beeper (mono)
         sample_rate = 44100
         t = np.linspace(0, duration, int(sample_rate * duration), False)
         wave = 0.5 * (1 + np.sign(np.sin(2 * np.pi * freq * t)))
         wave = (wave * 32767).astype(np.int16)
+        # Ensure mono buffer
         sound = pg.mixer.Sound(buffer=wave.tobytes())
         self.beeper_channel.play(sound)
 
@@ -197,6 +200,11 @@ class Audio:
         ch_name = INV_CHANNEL_MAP[ch_idx]
         pan = PAN_MAP[ch_name]
         stereo_audio = apply_pan(audio, pan)
+        
+        # Flatten stereo array for pygame (interleaved L, R)
+        if stereo_audio.ndim == 2:
+            stereo_audio = stereo_audio.astype(np.int16)
+            stereo_audio = stereo_audio.flatten(order='C')  # Interleaved
         
         # Convert to bytes and play
         sound = pg.mixer.Sound(buffer=stereo_audio.tobytes())

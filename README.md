@@ -70,7 +70,7 @@ Although, with Manjaro, the screen appears to flicker when starting it (not sure
 - **aaiCreator.py**: Converts images/animations into compatible images to be used into programs (png, gif, webp).
 - **progdebug.py**: Parses programs without running them & deleting the temp.py
 - **charmap_updater.py**: Regenerates indices of the character map if something has been deleted (sometimes unreliable).
-- **dev_stuff**: Some tools for developers like aai randomizing and reconstruction.
+- **palettegen.py**: Generates a copy-and-paste palette to put into colors.txt from an image.
 
 ## Dependencies
 

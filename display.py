@@ -504,7 +504,7 @@ class Display:
             self.draw_aai(cx, cy, path="resources/cursors/pointer.aai")
         if settings.settings.get("model") == "ink" or settings.settings.get("model") == "ink-c":
             self.clock.tick(15) #suffer
-            self.ghost(0.2)
+            self.ghost(0.2) 
         else:
             self.clock.tick(60)
         self.debug()
